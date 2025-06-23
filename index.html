@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>The Hoodie Cuber</title>
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --accent: #00bcd4;
+      --text: #ffffff;
+      --panel: #1e1e1e;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      text-align: center;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--panel);
+      padding: 10px 20px;
+      box-shadow: 0 0 10px #000;
+    }
+
+    header img {
+      height: 50px;
+      margin-right: 15px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      margin: 0;
+      color: var(--accent);
+    }
+
+    .menu-container {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .menu-button {
+      font-size: 30px;
+      background: none;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .menu-options {
+      display: none;
+      position: absolute;
+      background-color: var(--panel);
+      border: 1px solid #555;
+      border-radius: 10px;
+      top: 40px;
+      right: 0;
+      z-index: 1;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+    }
+
+    .menu-options button {
+      display: block;
+      padding: 12px 20px;
+      font-size: 16px;
+      color: white;
+      background: none;
+      border: none;
+      text-align: left;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .menu-options button:hover {
+      background-color: #333;
+    }
+
+    iframe {
+      width: 90%;
+      height: 500px;
+      border: none;
+      margin: 20px auto;
+      border-radius: 12px;
+      display: none;
+      box-shadow: 0 0 10px #000;
+    }
+
+    #timer-box {
+      display: none;
+      margin-top: 40px;
+    }
+
+    #scramble {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+
+    #timer {
+      font-size: 48px;
+      margin-bottom: 10px;
+      transition: transform 0.3s ease, color 0.3s ease;
+      min-height: 60px;
+    }
+
+    #timer.running {
+      color: #4caf50;
+      transform: scale(1.3);
+    }
+
+    #timer.ready {
+      color: #ff9800;
+    }
+
+    #timer-toggle {
+      background-color: var(--accent);
+      color: black;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #timer-toggle:hover {
+      background-color: #0097a7;
+    }
+
+    .cube-display {
+      margin: 20px auto;
+      display: inline-block;
+      background: #222;
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .cube-face {
+      display: grid;
+      grid-template-columns: repeat(3, 30px);
+      grid-template-rows: repeat(3, 30px);
+      gap: 2px;
+      margin: 5px;
+    }
+
+    .cube-face div {
+      border-radius: 3px;
+      width: 30px;
+      height: 30px;
+    }
+
+    .cube-row {
+      display: flex;
+      justify-content: center;
+    }
+
+    .U { background-color: #ffffff; }
+    .D { background-color: #ffff00; }
+    .F { background-color: #00ff00; }
+    .B { background-color: #0000ff; }
+    .L { background-color: #ff8000; }
+    .R { background-color: #ff0000; }
+
+    .contact-info {
+      margin: 30px auto;
+      padding: 20px;
+      background: var(--panel);
+      border-radius: 10px;
+      max-width: 500px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    .contact-info h2 {
+      color: var(--accent);
+      margin-top: 0;
+    }
+
+    .contact-info p {
+      margin: 10px 0;
+    }
+
+    .instructions {
+      margin: 15px auto;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 20px;
+      }
+
+      .menu-button {
+        font-size: 24px;
+      }
+
+      #timer {
+        font-size: 36px;
+      }
+
+      #timer-toggle {
+        font-size: 16px;
+      }
+
+      .cube-face {
+        grid-template-columns: repeat(3, 20px);
+        grid-template-rows: repeat(3, 20px);
+      }
+
+      .cube-face div {
+        width: 20px;
+        height: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="Logo">
+    <h1>The Hoodie Cuber</h1>
+  </header>
+
+  <div class="menu-container">
+    <button class="menu-button" onclick="toggleMenu()">⋮</button>
+    <div class="menu-options" id="menu">
+      <button onclick="loadPDF('OLL.pdf')">OLL</button>
+      <button onclick="loadPDF('PLL.pdf')">PLL</button>
+      <button onclick="loadPDF('F2L.pdf')">F2L</button>
+      <button onclick="loadPDF('OLLL.pdf')">OLLL</button>
+      <button onclick="showTimer()">TIMER</button>
+    </div>
+  </div>
+
+  <div class="contact-info">
+    <h2>Contact Me</h2>
+    <p>Instagram: <a href="https://www.instagram.com/thehoodiecuber" target="_blank" style="color: var(--accent);">@thehoodiecuber</a></p>
+    <p>Email: <a href="mailto:sanjayragavendrak@gmail.com" style="color: var(--accent);">sanjayragavendrak@gmail.com</a></p>
+  </div>
+
+  <iframe id="pdf-frame"></iframe>
+
+  <div id="timer-box">
+    <div id="scramble">Scramble: --</div>
+    <div class="cube-display" id="cube-display"></div>
+    <div id="timer">0.00</div>
+    <button id="timer-toggle" onclick="handleTimerAction()">Start / Stop</button>
+    <div class="instructions">Press spacebar to start/stop timer</div>
+  </div>
+
+  <script>
+    let running = false;
+    let ready = false;
+    let startTime;
+    let animationFrameId;
+    let cube = {};
+
+    function getSolvedCube() {
+      return {
+        U: Array(9).fill('U'),
+        D: Array(9).fill('D'),
+        F: Array(9).fill('F'),
+        B: Array(9).fill('B'),
+        L: Array(9).fill('L'),
+        R: Array(9).fill('R')
+      };
+    }
+
+    function toggleMenu() {
+      const menu = document.getElementById("menu");
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    }
+
+    function loadPDF(file) {
+      document.getElementById("pdf-frame").src = file;
+      document.getElementById("pdf-frame").style.display = "block";
+      document.getElementById("timer-box").style.display = "none";
+      toggleMenu();
+    }
+
+    function showTimer() {
+      document.getElementById("pdf-frame").style.display = "none";
+      document.getElementById("timer-box").style.display = "block";
+      generateScramble();
+      document.getElementById("timer").innerText = "0.00";
+      document.getElementById("timer").className = "";
+      toggleMenu();
+      ready = true;
+    }
+
+    function handleTimerAction() {
+      if (!running && !ready) {
+        ready = true;
+        document.getElementById("timer").className = "ready";
+        document.getElementById("timer").innerText = "Ready";
+      } else if (!running && ready) {
+        startTimer();
+      } else {
+        stopTimer();
+      }
+    }
+
+    function startTimer() {
+      if (!ready) return;
+      startTime = Date.now();
+      running = true;
+      ready = false;
+      const timerElem = document.getElementById("timer");
+      timerElem.classList.add("running");
+      timerElem.classList.remove("ready");
+      timerElem.innerText = "0.00";
+      updateTimer();
+    }
+
+    function stopTimer() {
+      if (!running) return;
+      running = false;
+      const timerElem = document.getElementById("timer");
+      const time = ((Date.now() - startTime) / 1000).toFixed(2);
+      timerElem.innerText = time + "s";
+      timerElem.classList.remove("running");
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      generateScramble();
+    }
+
+    function updateTimer() {
+      if (!running) return;
+      const timerElem = document.getElementById("timer");
+      const time = ((Date.now() - startTime) / 1000).toFixed(2);
+      timerElem.innerText = time;
+      animationFrameId = requestAnimationFrame(updateTimer);
+    }
+
+    function generateScramble() {
+      cube = getSolvedCube();
+      const moves = ["U", "D", "L", "R", "F", "B"];
+      const suffixes = ["", "'", "2"];
+      let scramble = "", last = "";
+
+      for (let i = 0; i < 20; i++) {
+        let move;
+        do {
+          move = moves[Math.floor(Math.random() * moves.length)];
+        } while (move === last);
+        last = move;
+        const suf = suffixes[Math.floor(Math.random() * 3)];
+        const finalMove = move + suf;
+        scramble += finalMove + " ";
+        applyMove(finalMove);
+      }
+
+      document.getElementById("scramble").innerText = "Scramble: " + scramble.trim();
+      renderCube();
+      document.getElementById("timer").innerText = "0.00";
+      document.getElementById("timer").className = "";
+    }
+
+    // Correct cube rotation logic with proper WCA notation
+    function rotateFace(face, clockwise) {
+      const current = [...cube[face]];
+      const rotated = clockwise ? 
+        [current[6], current[3], current[0],
+         current[7], current[4], current[1],
+         current[8], current[5], current[2]] :
+        [current[2], current[5], current[8],
+         current[1], current[4], current[7],
+         current[0], current[3], current[6]];
+      cube[face] = rotated;
+    }
+
+    function applyMove(move) {
+      const face = move[0];
+      const isDouble = move.includes("2");
+      const isCCW = move.includes("'");
+      
+      // Apply the move once or twice
+      for (let i = 0; i < (isDouble ? 2 : 1); i++) {
+        rotateFace(face, !isCCW);
+        rotateAdjacent(face, !isCCW);
+      }
+    }
+
+    function rotateAdjacent(face, clockwise) {
+      switch (face) {
+        case 'U':
+          if (clockwise) {
+            // Rotate adjacent edges clockwise
+            const temp = [cube.F[0], cube.F[1], cube.F[2]];
+            cube.F[0] = cube.R[0]; cube.F[1] = cube.R[1]; cube.F[2] = cube.R[2];
+            cube.R[0] = cube.B[0]; cube.R[1] = cube.B[1]; cube.R[2] = cube.B[2];
+            cube.B[0] = cube.L[0]; cube.B[1] = cube.L[1]; cube.B[2] = cube.L[2];
+            cube.L[0] = temp[0]; cube.L[1] = temp[1]; cube.L[2] = temp[2];
+          } else {
+            // Rotate adjacent edges counter-clockwise
+            const temp = [cube.F[0], cube.F[1], cube.F[2]];
+            cube.F[0] = cube.L[0]; cube.F[1] = cube.L[1]; cube.F[2] = cube.L[2];
+            cube.L[0] = cube.B[0]; cube.L[1] = cube.B[1]; cube.L[2] = cube.B[2];
+            cube.B[0] = cube.R[0]; cube.B[1] = cube.R[1]; cube.B[2] = cube.R[2];
+            cube.R[0] = temp[0]; cube.R[1] = temp[1]; cube.R[2] = temp[2];
+          }
+          break;
+          
+        case 'D':
+          if (clockwise) {
+            // Rotate adjacent edges clockwise
+            const temp = [cube.F[6], cube.F[7], cube.F[8]];
+            cube.F[6] = cube.L[6]; cube.F[7] = cube.L[7]; cube.F[8] = cube.L[8];
+            cube.L[6] = cube.B[6]; cube.L[7] = cube.B[7]; cube.L[8] = cube.B[8];
+            cube.B[6] = cube.R[6]; cube.B[7] = cube.R[7]; cube.B[8] = cube.R[8];
+            cube.R[6] = temp[0]; cube.R[7] = temp[1]; cube.R[8] = temp[2];
+          } else {
+            // Rotate adjacent edges counter-clockwise
+            const temp = [cube.F[6], cube.F[7], cube.F[8]];
+            cube.F[6] = cube.R[6]; cube.F[7] = cube.R[7]; cube.F[8] = cube.R[8];
+            cube.R[6] = cube.B[6]; cube.R[7] = cube.B[7]; cube.R[8] = cube.B[8];
+            cube.B[6] = cube.L[6]; cube.B[7] = cube.L[7]; cube.B[8] = cube.L[8];
+            cube.L[6] = temp[0]; cube.L[7] = temp[1]; cube.L[8] = temp[2];
+          }
+          break;
+          
+        case 'F':
+          if (clockwise) {
+            // Rotate adjacent edges clockwise
+            const tempU = [cube.U[6], cube.U[7], cube.U[8]];
+            cube.U[6] = cube.L[8]; cube.U[7] = cube.L[5]; cube.U[8] = cube.L[2];
+            cube.L[2] = cube.D[0]; cube.L[5] = cube.D[1]; cube.L[8] = cube.D[2];
+            cube.D[0] = cube.R[6]; cube.D[1] = cube.R[3]; cube.D[2] = cube.R[0];
+            cube.R[0] = tempU[0]; cube.R[3] = tempU[1]; cube.R[6] = tempU[2];
+          } else {
+            // Rotate adjacent edges counter-clockwise
+            const tempU = [cube.U[6], cube.U[7], cube.U[8]];
+            cube.U[6] = cube.R[0]; cube.U[7] = cube.R[3]; cube.U[8] = cube.R[6];
+            cube.R[0] = cube.D[2]; cube.R[3] = cube.D[1]; cube.R[6] = cube.D[0];
+            cube.D[0] = cube.L[2]; cube.D[1] = cube.L[5]; cube.D[2] = cube.L[8];
+            cube.L[2] = tempU[2]; cube.L[5] = tempU[1]; cube.L[8] = tempU[0];
+          }
+          break;
+          
+        case 'B':
+          if (clockwise) {
+            // Rotate adjacent edges clockwise
+            const tempU = [cube.U[0], cube.U[1], cube.U[2]];
+            cube.U[0] = cube.R[2]; cube.U[1] = cube.R[5]; cube.U[2] = cube.R[8];
+            cube.R[2] = cube.D[8]; cube.R[5] = cube.D[7]; cube.R[8] = cube.D[6];
+            cube.D[6] = cube.L[0]; cube.D[7] = cube.L[3]; cube.D[8] = cube.L[6];
+            cube.L[0] = tempU[2]; cube.L[3] = tempU[1]; cube.L[6] = tempU[0];
+          } else {
+            // Rotate adjacent edges counter-clockwise
+            const tempU = [cube.U[0], cube.U[1], cube.U[2]];
+            cube.U[0] = cube.L[6]; cube.U[1] = cube.L[3]; cube.U[2] = cube.L[0];
+            cube.L[0] = cube.D[6]; cube.L[3] = cube.D[7]; cube.L[6] = cube.D[8];
+            cube.D[6] = cube.R[8]; cube.D[7] = cube.R[5]; cube.D[8] = cube.R[2];
+            cube.R[2] = tempU[0]; cube.R[5] = tempU[1]; cube.R[8] = tempU[2];
+          }
+          break;
+          
+        case 'L':
+          if (clockwise) {
+            // Rotate adjacent edges clockwise
+            const tempU = [cube.U[0], cube.U[3], cube.U[6]];
+            cube.U[0] = cube.B[8]; cube.U[3] = cube.B[5]; cube.U[6] = cube.B[2];
+            cube.B[2] = cube.D[6]; cube.B[5] = cube.D[3]; cube.B[8] = cube.D[0];
+            cube.D[0] = cube.F[0]; cube.D[3] = cube.F[3]; cube.D[6] = cube.F[6];
+            cube.F[0] = tempU[0]; cube.F[3] = tempU[1]; cube.F[6] = tempU[2];
+          } else {
+            // Rotate adjacent edges counter-clockwise
+            const tempU = [cube.U[0], cube.U[3], cube.U[6]];
+            cube.U[0] = cube.F[0]; cube.U[3] = cube.F[3]; cube.U[6] = cube.F[6];
+            cube.F[0] = cube.D[0]; cube.F[3] = cube.D[3]; cube.F[6] = cube.D[6];
+            cube.D[0] = cube.B[8]; cube.D[3] = cube.B[5]; cube.D[6] = cube.B[2];
+            cube.B[2] = cube.U[6]; cube.B[5] = cube.U[3]; cube.B[8] = cube.U[0];
+          }
+          break;
+          
+        case 'R':
+          if (clockwise) {
+            // Rotate adjacent edges clockwise
+            const tempU = [cube.U[2], cube.U[5], cube.U[8]];
+            cube.U[2] = cube.F[2]; cube.U[5] = cube.F[5]; cube.U[8] = cube.F[8];
+            cube.F[2] = cube.D[2]; cube.F[5] = cube.D[5]; cube.F[8] = cube.D[8];
+            cube.D[2] = cube.B[6]; cube.D[5] = cube.B[3]; cube.D[8] = cube.B[0];
+            cube.B[0] = tempU[2]; cube.B[3] = tempU[1]; cube.B[6] = tempU[0];
+          } else {
+            // Rotate adjacent edges counter-clockwise
+            const tempU = [cube.U[2], cube.U[5], cube.U[8]];
+            cube.U[2] = cube.B[6]; cube.U[5] = cube.B[3]; cube.U[8] = cube.B[0];
+            cube.B[0] = cube.D[8]; cube.B[3] = cube.D[5]; cube.B[6] = cube.D[2];
+            cube.D[2] = cube.F[2]; cube.D[5] = cube.F[5]; cube.D[8] = cube.F[8];
+            cube.F[2] = tempU[0]; cube.F[5] = tempU[1]; cube.F[8] = tempU[2];
+          }
+          break;
+      }
+    }
+
+    function renderCube() {
+      const display = document.getElementById("cube-display");
+      display.innerHTML = '';
+
+      // Top face (U)
+      const top = document.createElement("div");
+      top.className = "cube-row";
+      const space = document.createElement("div");
+      space.style.width = "96px";
+      top.appendChild(space);
+      top.appendChild(createFace(cube.U));
+      display.appendChild(top);
+
+      // Middle faces (L, F, R, B)
+      const mid = document.createElement("div");
+      mid.className = "cube-row";
+      mid.appendChild(createFace(cube.L));
+      mid.appendChild(createFace(cube.F));
+      mid.appendChild(createFace(cube.R));
+      mid.appendChild(createFace(cube.B));
+      display.appendChild(mid);
+
+      // Bottom face (D)
+      const bot = document.createElement("div");
+      bot.className = "cube-row";
+      const space2 = document.createElement("div");
+      space2.style.width = "96px";
+      bot.appendChild(space2);
+      bot.appendChild(createFace(cube.D));
+      display.appendChild(bot);
+    }
+
+    function createFace(faceColors) {
+      const face = document.createElement("div");
+      face.className = "cube-face";
+      for (let i = 0; i < 9; i++) {
+        const sticker = document.createElement("div");
+        sticker.className = faceColors[i];
+        face.appendChild(sticker);
+      }
+      return face;
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleTimerAction();
+      }
+    });
+
+    window.onload = function() {
+      cube = getSolvedCube();
+      renderCube();
+    };
+  </script>
+
+</body>
+</html>
