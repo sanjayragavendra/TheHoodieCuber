@@ -26,18 +26,56 @@
       color: var(--text);
       text-align: center;
     }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text);
+  text-align: center;
+  /* New background properties */
+  background-image: url('Wallpaper.jpg');
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+}
 
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--panel);
-      padding: 15px 20px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
-      position: relative;
-      z-index: 10;
-    }
+/* Add a semi-transparent overlay to improve readability */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(18, 18, 18, 0.7); /* Dark overlay with 70% opacity */
+  z-index: -1;
+}
 
+	header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(42, 42, 42, 0.8); /* Slightly transparent */
+  padding: 15px 20px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 10;
+}
+
+.bubble-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+  padding: 30px;
+  max-width: 800px;
+  margin: 30px auto;
+  background: rgba(42, 42, 42, 0.7); /* Slightly transparent */
+  border-radius: 15px;
+  backdrop-filter: blur(5px); /* Optional: adds a nice blur effect */
+}
+    
     header img {
       height: 50px;
       margin-right: 15px;
@@ -542,11 +580,13 @@
 </head>
 <body>
 
-  <header>
+<header>
+  <a href="#" onclick="resetToHome(); return false;" style="display: flex; align-items: center; text-decoration: none;">
     <img src="logo.png" alt="Logo">
     <h1>The Hoodie Cuber</h1>
-  </header>
-
+  </a>
+</header>
+  
   <!-- Bubble Grid -->
   <div class="bubble-grid">
     <div class="bubble" onclick="downloadPDF('OLL.pdf')">OLL</div>
@@ -687,7 +727,7 @@
   <!-- Contact Info -->
   <div class="contact-info">
     <h2>Contact Me</h2>
-    <p>Instagram: <a href="https://www.instagram.com/thehoodiecuber" target="_blank">@thehoodiecuber</a></p>
+    <p>Instagram: <a href="https://www.instagram.com/thehoodiecuber" target="_blank">thehoodiecuber </a></p>
     <p>Email: <a href="mailto:sanjayragavendrak@gmail.com">sanjayragavendrak@gmail.com</a></p>
   </div>
 
@@ -739,7 +779,11 @@
         bubble.style.animation = 'float 4s ease-in-out infinite';
       }, 300);
     }
-
+function resetToHome() {
+  document.getElementById('pdfContainer').style.display = 'none';
+  document.getElementById('timer-box').style.display = 'none';
+  menuOptions.style.display = 'none';
+}
     // Show PDF with download option
     function showPDF(pdfFile) {
       currentPDF = pdfFile;
@@ -1245,6 +1289,8 @@
         renderTimesList();
       }
     };
+
+
   </script>
 </body>
 </html>
