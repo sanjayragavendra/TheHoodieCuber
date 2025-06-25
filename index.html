@@ -1620,88 +1620,8 @@ function changeCubeSize(size) {
   cubeSizeOptions.style.display = 'none';
   generateScramble();
 }
-    // GitHub Login Functionality
-    const GITHUB_CLIENT_ID = 'Ov23li3dYeqou8G9UKqu';
-    const GITHUB_REDIRECT_URI = 'https://sanjayragavendra.github.io/TheHoodieCuber/';
-    const GITHUB_AUTH_URL = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=user`;
 
-    // Add GitHub login button to menu
-    const githubLoginButton = document.createElement('button');
-    githubLoginButton.textContent = 'Login with GitHub';
-    githubLoginButton.onclick = initiateGitHubLogin;
-    menuOptions.appendChild(githubLoginButton);
-
-    // Check for GitHub auth code on page load
-    window.addEventListener('load', checkGitHubAuth);
-
-    function initiateGitHubLogin() {
-      // Close menu
-      menuOptions.style.display = 'none';
-      // Redirect to GitHub OAuth
-      window.location.href = GITHUB_AUTH_URL;
-    }
-
-    function checkGitHubAuth() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      
-      if (code) {
-        // Remove code from URL without reloading
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Show loading state
-        const timerBox = document.getElementById('timer-box');
-        const originalContent = timerBox.innerHTML;
-        timerBox.innerHTML = '<div style="padding: 20px; text-align: center;">Authenticating with GitHub...</div>';
-        timerBox.style.display = 'block';
-        
-        // Exchange code for token (this would normally be done server-side)
-        // For demo purposes, we'll just store the code in localStorage
-        localStorage.setItem('github_auth_code', code);
-        
-        // After a short delay, show success and restore content
-        setTimeout(() => {
-          timerBox.innerHTML = `
-            <div style="padding: 20px; text-align: center;">
-              <h3>GitHub Login Successful!</h3>
-              <p>You're now logged in via GitHub.</p>
-              <button onclick="showTimer()" style="
-                background-color: var(--accent);
-                color: black;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 5px;
-                cursor: pointer;
-                margin-top: 15px;
-              ">Continue to Timer</button>
-            </div>
-          `;
-        }, 1500);
-      }
-    }
-
-    // Add logout button if logged in
-    function updateAuthUI() {
-      if (localStorage.getItem('github_auth_code')) {
-        // Replace login button with logout
-        githubLoginButton.textContent = 'Logout from GitHub';
-        githubLoginButton.onclick = logoutGitHub;
-      } else {
-        // Show login button
-        githubLoginButton.textContent = 'Login with GitHub';
-        githubLoginButton.onclick = initiateGitHubLogin;
-      }
-    }
-
-    function logoutGitHub() {
-      localStorage.removeItem('github_auth_code');
-      menuOptions.style.display = 'none';
-      updateAuthUI();
-      alert('Logged out from GitHub successfully!');
-    }
-
-    // Initialize auth UI
-    updateAuthUI();
   </script>
 </body>
 </html>
+
