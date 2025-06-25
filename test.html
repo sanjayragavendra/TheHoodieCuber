@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>The Hoodie Cuber</title>
+  <style>
+    /* Add these new styles to your existing CSS */
+    
+    /* Login Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content {
+      background-color: var(--panel);
+      padding: 30px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      animation: fadeIn 0.3s ease-out;
+      text-align: center;
+    }
+    
+    .modal h2 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+    
+    .github-login-btn {
+      background-color: #24292e;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px auto;
+      transition: all 0.3s ease;
+    }
+    
+    .github-login-btn:hover {
+      background-color: #2d3338;
+      transform: translateY(-2px);
+    }
+    
+    .github-login-btn i {
+      margin-right: 10px;
+      font-size: 20px;
+    }
+    
+    /* User Info */
+    .user-info {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: var(--panel);
+      padding: 10px 15px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      z-index: 99;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    
+    .user-info img {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    
+    .logout-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: bold;
+      padding: 5px;
+      margin-left: 10px;
+    }
+    
+    /* Add Font Awesome for GitHub icon */
+    .fa-github {
+      font-size: inherit;
+    }
+  </style>
+  <!-- Add Font Awesome for GitHub icon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- User Info (shown when logged in) -->
+  <div class="user-info" id="userInfo" style="display: none;">
+    <img id="userAvatar" src="" alt="User Avatar">
+    <span id="usernameDisplay"></span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <h2>Login with GitHub</h2>
+      <p>Sign in to save and track your solve times</p>
+      <button class="github-login-btn" onclick="loginWithGitHub()">
+        <i class="fab fa-github"></i> Continue with GitHub
+      </button>
+    </div>
+  </div>
+
+  <!-- Rest of your existing HTML remains the same -->
+
+  <script>
+    // GitHub OAuth Configuration
+    const GITHUB_CLIENT_ID = 'Ov23li3dYeqou8G9UKqu'; // Replace with your actual client ID
+    const GITHUB_REDIRECT_URI = window.location.href.includes('localhost') 
+      ? 'http://localhost:8000' // For local development
+      : 'https://your-username.github.io/your-repo-name'; // Replace with your GitHub Pages URL
+    
+    // User data
+    let currentUser = null;
+    
+    // Initialize the app
+    window.onload = function() {
+      cube = getSolvedCube();
+      renderCube();
+      
+      // Check for existing session
+      const userData = localStorage.getItem('githubCubeUser');
+      if (userData) {
+        currentUser = JSON.parse(userData);
+        updateUserUI();
+        
+        // Load user's times
+        loadUserTimes();
+      } else {
+        // Show login modal if no user is logged in
+        setTimeout(() => {
+          document.getElementById('loginModal').style.display = 'flex';
+        }, 500);
+      }
+    };
+    
+    // GitHub OAuth Login
+    function loginWithGitHub() {
+      const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=user:email`;
+      window.location.href = authUrl;
+    }
+    
+    // Check for OAuth callback
+    function checkForOAuthCallback() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      
+      if (code) {
+        // Remove code from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Exchange code for access token (this would normally be done server-side)
+        // For this demo, we'll use a proxy server or mock the response
+        exchangeCodeForToken(code);
+      }
+    }
+    
+    // Mock function to exchange code for token
+    // In a real app, this would be a server-side call
+    async function exchangeCodeForToken(code) {
+      // Show loading state
+      document.getElementById('loginModal').querySelector('button').innerHTML = 
+        '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+      
+      try {
+        // In a real app, you would call your backend here
+        // For demo purposes, we'll mock the response
+        const mockUserData = {
+          login: 'githubuser',
+          avatar_url: 'https://avatars.githubusercontent.com/u/1234567?v=4',
+          name: 'GitHub User',
+          access_token: 'mock_access_token_123'
+        };
+        
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Save user data
+        currentUser = {
+          username: mockUserData.login,
+          avatar: mockUserData.avatar_url,
+          name: mockUserData.name,
+          token: mockUserData.access_token
+        };
+        
+        localStorage.setItem('githubCubeUser', JSON.stringify(currentUser));
+        
+        // Update UI
+        updateUserUI();
+        document.getElementById('loginModal').style.display = 'none';
+        
+        // Load user's times
+        loadUserTimes();
+      } catch (error) {
+        console.error('Authentication failed:', error);
+        alert('Authentication failed. Please try again.');
+        document.getElementById('loginModal').querySelector('button').innerHTML = 
+          '<i class="fab fa-github"></i> Continue with GitHub';
+      }
+    }
+    
+    // Update UI with user info
+    function updateUserUI() {
+      if (currentUser) {
+        document.getElementById('userInfo').style.display = 'flex';
+        document.getElementById('usernameDisplay').textContent = currentUser.name || currentUser.username;
+        document.getElementById('userAvatar').src = currentUser.avatar;
+      } else {
+        document.getElementById('userInfo').style.display = 'none';
+      }
+    }
+    
+    // Load user's times from localStorage
+    function loadUserTimes() {
+      if (currentUser) {
+        const userTimes = localStorage.getItem(`cubeTimes_${currentUser.username}`);
+        times = userTimes ? JSON.parse(userTimes) : [];
+        sessionTimes = [...times].slice(0, 100);
+        
+        updateStats();
+        renderTimesList();
+      }
+    }
+    
+    // Save user's times to localStorage
+    function saveUserTimes() {
+      if (currentUser) {
+        localStorage.setItem(`cubeTimes_${currentUser.username}`, JSON.stringify(times));
+      }
+    }
+    
+    // Logout
+    function logout() {
+      // Save current times before logging out
+      saveUserTimes();
+      
+      // Clear user session
+      currentUser = null;
+      localStorage.removeItem('githubCubeUser');
+      
+      // Reset times
+      times = [];
+      sessionTimes = [];
+      
+      // Update UI
+      updateUserUI();
+      updateStats();
+      renderTimesList();
+      
+      // Show login modal
+      document.getElementById('loginModal').style.display = 'flex';
+    }
+    
+    // Modify your existing stopTimer function to save times per user
+    function stopTimer() {
+      if (!running) return;
+      running = false;
+      const timerElem = document.getElementById('timer');
+      const time = ((Date.now() - startTime) / 1000).toFixed(2);
+      timerElem.innerText = time + 's';
+      timerElem.classList.remove('running');
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      
+      // Save the time
+      const timeObj = {
+        time: parseFloat(time),
+        scramble: document.getElementById('scramble').textContent.replace('Scramble: ', ''),
+        date: new Date().toISOString()
+      };
+      
+      times.unshift(timeObj);
+      sessionTimes.unshift(timeObj);
+      
+      // Keep only the last 1000 times
+      if (times.length > 1000) {
+        times.pop();
+      }
+      
+      // Save to localStorage
+      saveUserTimes();
+      
+      // Update stats and times list
+      updateStats();
+      renderTimesList();
+      
+      // Generate new scramble
+      generateScramble();
+    }
+    
+    // Check for OAuth callback when page loads
+    checkForOAuthCallback();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>The Hoodie Cuber</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --accent: #00bcd4;
+      --text: #ffffff;
+      --panel: #2a2a2a;
+      --panel-hover: #333;
+      --contact-bg: rgba(42, 42, 42, 0.9);
+      --download-text: #000000;
+      --bubble-text: #ffffff;
+      --bubble-bg: #00bcd4;
+      --good: #4CAF50;
+      --average: #FFC107;
+      --bad: #F44336;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      text-align: center;
+    }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text);
+  text-align: center;
+  /* New background properties */
+  background-image: url('Wallpaper.png');
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+}
+
+/* Add a semi-transparent overlay to improve readability */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(18, 18, 18, 0.7); /* Dark overlay with 70% opacity */
+  z-index: -1;
+}
+
+	header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(42, 42, 42, 0.8); /* Slightly transparent */
+  padding: 15px 20px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 10;
+}
+
+.bubble-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+  padding: 30px;
+  max-width: 800px;
+  margin: 30px auto;
+  background: rgba(42, 42, 42, 0.7); /* Slightly transparent */
+  border-radius: 15px;
+  backdrop-filter: blur(5px); /* Optional: adds a nice blur effect */
+}
+    
+    header img {
+      height: 50px;
+      margin-right: 15px;
+      transition: transform 0.3s ease;
+    }
+
+    header img:hover {
+      transform: rotate(15deg);
+    }
+
+    header h1 {
+      font-size: 28px;
+      margin: 0;
+      color: var(--accent);
+      text-shadow: 0 0 8px rgba(0, 188, 212, 0.5);
+    }
+
+    /* Bubble grid styles */
+    .bubble-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      padding: 30px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .bubble {
+      background: var(--bubble-bg);
+      color: var(--bubble-text);
+      border-radius: 50%;
+      width: 150px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 20px;
+      box-shadow: 0 5px 15px rgba(0, 188, 212, 0.3);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .bubble:nth-child(2) {
+      animation-delay: 0.5s;
+    }
+    .bubble:nth-child(3) {
+      animation-delay: 1s;
+    }
+    .bubble:nth-child(4) {
+      animation-delay: 1.5s;
+    }
+
+    .bubble:hover {
+      transform: scale(1.1) translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 188, 212, 0.5);
+    }
+
+    .bubble:active {
+      transform: scale(0.95);
+    }
+
+    .bubble::after {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: -20%;
+      width: 140%;
+      height: 140%;
+      background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .bubble:hover::after {
+      opacity: 0.3;
+    }
+
+    /* Three-dot menu styles */
+    .menu-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+
+    .menu-button {
+      font-size: 30px;
+      background: var(--panel);
+      color: var(--text);
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+    }
+
+    .menu-button:hover {
+      background: var(--panel-hover);
+      transform: scale(1.1);
+    }
+
+    .menu-options {
+      display: none;
+      position: absolute;
+      right: 0;
+      background: var(--panel);
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+      overflow: hidden;
+      z-index: 101;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .menu-options button {
+      display: block;
+      width: 100%;
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .menu-options button:hover {
+      background: var(--panel-hover);
+      transform: translateX(5px);
+    }
+
+    /* PDF viewer container */
+    .pdf-container {
+      width: 90%;
+      margin: 20px auto;
+      display: none;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .pdf-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .pdf-title {
+      font-size: 20px;
+      color: var(--accent);
+    }
+
+    .pdf-download {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .pdf-download:hover {
+      background: #0097a7;
+      transform: translateY(-2px);
+    }
+
+    iframe {
+      width: 100%;
+      height: 500px;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    /* Timer styles */
+    #timer-box {
+      display: none;
+      margin-top: 20px;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    #scramble {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: var(--accent);
+    }
+
+    #timer {
+      font-size: 48px;
+      margin-bottom: 10px;
+      transition: all 0.3s ease;
+      min-height: 60px;
+      font-family: 'Courier New', monospace;
+    }
+
+    #timer.running {
+      color: #4caf50;
+      transform: scale(1.3);
+    }
+
+    #timer.ready {
+      color: #ff9800;
+    }
+
+    #timer-toggle {
+      background-color: var(--accent);
+      color: black;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 18px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+
+    #timer-toggle:hover {
+      background-color: #0097a7;
+      transform: translateY(-2px);
+    }
+
+    .cube-display {
+      margin: 20px auto;
+      display: inline-block;
+      background: rgba(34, 34, 34, 0.8);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    .cube-face {
+      display: grid;
+      grid-template-columns: repeat(3, 30px);
+      grid-template-rows: repeat(3, 30px);
+      gap: 2px;
+      margin: 5px;
+    }
+
+    .cube-face div {
+      border-radius: 3px;
+      width: 30px;
+      height: 30px;
+    }
+
+    .cube-row {
+      display: flex;
+      justify-content: center;
+    }
+
+    .U { background-color: #ffffff; }
+    .D { background-color: #ffff00; }
+    .F { background-color: #00ff00; }
+    .B { background-color: #0000ff; }
+    .L { background-color: #ff8000; }
+    .R { background-color: #ff0000; }
+
+    /* Stats container */
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin: 20px auto;
+      max-width: 1000px;
+      padding: 0 20px;
+    }
+
+    .stats-box {
+      background: var(--panel);
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .stats-box h3 {
+      margin-top: 0;
+      color: var(--accent);
+      border-bottom: 1px solid var(--accent);
+      padding-bottom: 8px;
+    }
+
+    .stats-value {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .stats-details {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+    }
+
+    .stats-label {
+      text-align: left;
+    }
+
+    .stats-number {
+      text-align: right;
+      font-family: 'Courier New', monospace;
+    }
+
+    .good { color: var(--good); }
+    .average { color: var(--average); }
+    .bad { color: var(--bad); }
+
+    /* Times list */
+    .times-container {
+      max-height: 200px;
+      overflow-y: auto;
+      margin: 20px auto;
+      background: var(--panel);
+      border-radius: 10px;
+      padding: 10px;
+      max-width: 600px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+/* Dropdown styles */
+.cube-size-selector {
+  position: relative;
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.cube-size-toggle {
+  background: var(--panel);
+  color: var(--text);
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.cube-size-toggle:hover {
+  background: var(--panel-hover);
+}
+
+.cube-size-toggle::after {
+  content: '▼';
+  font-size: 10px;
+  margin-left: 8px;
+}
+
+.cube-size-options {
+  display: none;
+  position: absolute;
+  background: var(--panel);
+  border-radius: 5px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+  z-index: 10;
+  width: 100%;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.cube-size-options button {
+  display: block;
+  width: 100%;
+  padding: 8px 15px;
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cube-size-options button:hover {
+  background: var(--panel-hover);
+}
+    .times-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .time-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 15px;
+      border-bottom: 1px solid #333;
+      transition: background 0.2s;
+    }
+
+    .time-item:hover {
+      background: #333;
+    }
+
+    .time-value {
+      font-family: 'Courier New', monospace;
+    }
+
+    .time-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .time-action {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    /* Contact info */
+    .contact-info {
+      margin: 30px auto;
+      padding: 25px;
+      background: var(--contact-bg);
+      border-radius: 15px;
+      max-width: 500px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    }
+
+    .contact-info h2 {
+      color: var(--accent);
+      margin-top: 0;
+    }
+
+    .contact-info p {
+      margin: 15px 0;
+    }
+
+    .contact-info a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .contact-info a::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    .contact-info a:hover {
+      text-shadow: 0 0 5px rgba(0, 188, 212, 0.5);
+    }
+
+    .contact-info a:hover::after {
+      width: 100%;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #2a2a2a;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #00bcd4;
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #0097a7;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 22px;
+      }
+      
+      .menu-button {
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+      }
+      
+      iframe {
+        height: 400px;
+      }
+      
+      #timer {
+        font-size: 36px;
+      }
+      
+      .cube-face {
+        grid-template-columns: repeat(3, 25px);
+        grid-template-rows: repeat(3, 25px);
+      }
+      
+      .cube-face div {
+        width: 25px;
+        height: 25px;
+      }
+
+      .bubble-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        padding: 20px;
+      }
+
+      .bubble {
+        width: 120px;
+        height: 120px;
+        font-size: 18px;
+      }
+
+      .stats-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .bubble-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="#" onclick="resetToHome(); return false;" style="display: flex; align-items: center; text-decoration: none;">
+    <img src="logo.png" alt="Logo">
+    <h1>The Hoodie Cuber</h1>
+  </a>
+</header>
+  
+  <!-- Bubble Grid -->
+  <div class="bubble-grid">
+    <div class="bubble" onclick="downloadPDF('OLL.pdf')">OLL</div>
+    <div class="bubble" onclick="downloadPDF('PLL.pdf')">PLL</div>
+    <div class="bubble" onclick="downloadPDF('F2L.pdf')">F2L</div>
+    <div class="bubble" onclick="downloadPDF('2L-OLL.pdf')">2L-OLL</div>
+  </div>
+
+  <!-- Three-dot menu -->
+  <div class="menu-container">
+    <button class="menu-button" id="menuButton">⋮</button>
+    <div class="menu-options" id="menuOptions">
+      <button onclick="showPDF('OLL.pdf')">OLL</button>
+      <button onclick="showPDF('PLL.pdf')">PLL</button>
+      <button onclick="showPDF('F2L.pdf')">F2L</button>
+      <button onclick="showPDF('2L-OLL.pdf')">2L-OLL</button>
+      <button onclick="showTimer()">Timer</button>
+    </div>
+  </div>
+
+  <!-- PDF Viewer -->
+  <div class="pdf-container" id="pdfContainer">
+    <div class="pdf-header">
+      <div class="pdf-title" id="pdfTitle"></div>
+      <button class="pdf-download" id="pdfDownload">Download PDF</button>
+    </div>
+    <iframe id="pdfFrame"></iframe>
+  </div>
+
+  <!-- Timer -->
+  <div id="timer-box">
+    <div id="scramble">Scramble: --</div>
+    <div class="cube-display" id="cube-display"></div>
+    <div id="timer">0.00</div>
+	<div class="cube-size-selector">
+  <button class="cube-size-toggle" id="cubeSizeToggle">3x3 Cube</button>
+  <div class="cube-size-options" id="cubeSizeOptions">
+    <button onclick="changeCubeSize('3x3')">3x3 Cube</button>
+    <button onclick="changeCubeSize('2x2')">2x2 Cube</button>
+  </div>
+</div>
+    <button id="timer-toggle" onclick="handleTimerAction()">Start / Stop</button>
+
+    <div class="instructions">Press spacebar to start/stop timer</div>
+
+    <!-- Stats Container -->
+    <div class="stats-container">
+      <div class="stats-box">
+        <h3>Current Session</h3>
+        <div class="stats-value" id="session-count">0</div>
+        <div class="stats-details">solves recorded</div>
+      </div>
+      
+      <div class="stats-box">
+        <h3>Best Time</h3>
+        <div class="stats-value" id="best-time">--</div>
+        <div class="stats-details" id="best-time-details"></div>
+      </div>
+      
+      <div class="stats-box">
+        <h3>Average of 5</h3>
+        <div class="stats-value" id="ao5">--</div>
+        <div class="stats-details">
+          <div class="stats-row">
+            <span class="stats-label">BPA:</span>
+            <span class="stats-number" id="ao5-bpa">--</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">WPA:</span>
+            <span class="stats-number" id="ao5-wpa">--</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Target:</span>
+            <span class="stats-number" id="ao5-target">--</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stats-box">
+        <h3>Average of 12</h3>
+        <div class="stats-value" id="ao12">--</div>
+        <div class="stats-details">
+          <div class="stats-row">
+            <span class="stats-label">BPA:</span>
+            <span class="stats-number" id="ao12-bpa">--</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">WPA:</span>
+            <span class="stats-number" id="ao12-wpa">--</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Target:</span>
+            <span class="stats-number" id="ao12-target">--</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stats-box">
+        <h3>Average of 50</h3>
+        <div class="stats-value" id="ao50">--</div>
+        <div class="stats-details">
+          <div class="stats-row">
+            <span class="stats-label">BPA:</span>
+            <span class="stats-number" id="ao50-bpa">--</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">WPA:</span>
+            <span class="stats-number" id="ao50-wpa">--</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Target:</span>
+            <span class="stats-number" id="ao50-target">--</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="stats-box">
+        <h3>Average of 100</h3>
+        <div class="stats-value" id="ao100">--</div>
+        <div class="stats-details">
+          <div class="stats-row">
+            <span class="stats-label">BPA:</span>
+            <span class="stats-number" id="ao100-bpa">--</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">WPA:</span>
+            <span class="stats-number" id="ao100-wpa">--</span>
+          </div>
+          <div class="stats-row">
+            <span class="stats-label">Target:</span>
+            <span class="stats-number" id="ao100-target">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Times List -->
+    <div class="times-container">
+      <h3>Recent Times</h3>
+      <ul class="times-list" id="times-list">
+        <!-- Times will be added here dynamically -->
+      </ul>
+    </div>
+  </div>
+
+  <!-- Contact Info -->
+  <div class="contact-info">
+    <h2>Contact Me</h2>
+    <p>Instagram: <a href="https://www.instagram.com/thehoodiecuber" target="_blank">thehoodiecuber </a></p>
+    <p>Email: <a href="mailto:sanjayragavendrak@gmail.com">sanjayragavendrak@gmail.com</a></p>
+  </div>
+
+  <script>
+    // Timer functionality
+    let running = false;
+    let ready = false;
+    let startTime;
+    let animationFrameId;
+    let cube = {};
+    let currentPDF = '';
+    let times = JSON.parse(localStorage.getItem('cubeTimes')) || [];
+    let sessionTimes = [];
+
+    // Menu toggle
+    const menuButton = document.getElementById('menuButton');
+    const menuOptions = document.getElementById('menuOptions');
+    
+    menuButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      menuOptions.style.display = menuOptions.style.display === 'block' ? 'none' : 'block';
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', function() {
+      if (menuOptions.style.display === 'block') {
+        menuOptions.style.display = 'none';
+      }
+    });
+
+    // Prevent menu from closing when clicking inside it
+    menuOptions.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+
+    // Direct PDF download function for bubbles
+    function downloadPDF(pdfFile) {
+      const link = document.createElement('a');
+      link.href = pdfFile;
+      link.download = pdfFile;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Add click animation
+      const bubble = event.target;
+      bubble.style.animation = 'pulse 0.3s';
+      setTimeout(() => {
+        bubble.style.animation = 'float 4s ease-in-out infinite';
+      }, 300);
+    }
+function resetToHome() {
+  document.getElementById('pdfContainer').style.display = 'none';
+  document.getElementById('timer-box').style.display = 'none';
+  menuOptions.style.display = 'none';
+}
+    // Show PDF with download option
+    function showPDF(pdfFile) {
+      currentPDF = pdfFile;
+      const pdfContainer = document.getElementById('pdfContainer');
+      const pdfFrame = document.getElementById('pdfFrame');
+      const pdfTitle = document.getElementById('pdfTitle');
+      const pdfDownload = document.getElementById('pdfDownload');
+      
+      // Set PDF details
+      pdfTitle.textContent = pdfFile.replace('.pdf', '');
+      pdfFrame.src = pdfFile;
+      pdfContainer.style.display = 'block';
+      
+      // Hide timer
+      document.getElementById('timer-box').style.display = 'none';
+      
+      // Set up download button
+      pdfDownload.onclick = function() {
+        downloadPDF(pdfFile);
+      };
+      
+      // Close menu
+      menuOptions.style.display = 'none';
+    }
+
+    function showTimer() {
+      document.getElementById('pdfContainer').style.display = 'none';
+      document.getElementById('timer-box').style.display = 'block';
+      generateScramble();
+      document.getElementById('timer').innerText = '0.00';
+      document.getElementById('timer').className = '';
+      menuOptions.style.display = 'none';
+      ready = true;
+      updateStats();
+      renderTimesList();
+    }
+
+    function handleTimerAction() {
+      if (!running && !ready) {
+        ready = true;
+        document.getElementById('timer').className = 'ready';
+        document.getElementById('timer').innerText = 'Ready';
+      } else if (!running && ready) {
+        startTimer();
+      } else {
+        stopTimer();
+      }
+    }
+
+    function startTimer() {
+      if (!ready) return;
+      startTime = Date.now();
+      running = true;
+      ready = false;
+      const timerElem = document.getElementById('timer');
+      timerElem.classList.add('running');
+      timerElem.classList.remove('ready');
+      timerElem.innerText = '0.00';
+      updateTimer();
+    }
+
+    function stopTimer() {
+      if (!running) return;
+      running = false;
+      const timerElem = document.getElementById('timer');
+      const time = ((Date.now() - startTime) / 1000).toFixed(2);
+      timerElem.innerText = time + 's';
+      timerElem.classList.remove('running');
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      
+      // Save the time
+      const timeObj = {
+        time: parseFloat(time),
+        scramble: document.getElementById('scramble').textContent.replace('Scramble: ', ''),
+        date: new Date().toISOString()
+      };
+      
+      times.unshift(timeObj);
+      sessionTimes.unshift(timeObj);
+      
+      // Keep only the last 1000 times
+      if (times.length > 1000) {
+        times.pop();
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('cubeTimes', JSON.stringify(times));
+      
+      // Update stats and times list
+      updateStats();
+      renderTimesList();
+      
+      // Generate new scramble
+      generateScramble();
+    }
+
+    function updateTimer() {
+      if (!running) return;
+      const timerElem = document.getElementById('timer');
+      const time = ((Date.now() - startTime) / 1000).toFixed(2);
+      timerElem.innerText = time;
+      animationFrameId = requestAnimationFrame(updateTimer);
+    }
+
+    function getSolvedCube() {
+      return {
+        U: Array(9).fill('U'),
+        D: Array(9).fill('D'),
+        F: Array(9).fill('F'),
+        B: Array(9).fill('B'),
+        L: Array(9).fill('L'),
+        R: Array(9).fill('R')
+      };
+    }
+
+    function generateScramble() {
+      cube = getSolvedCube();
+      const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
+      const suffixes = ['', "'", '2'];
+      let scramble = '', last = '';
+
+      for (let i = 0; i < 20; i++) {
+        let move;
+        do {
+          move = moves[Math.floor(Math.random() * moves.length)];
+        } while (move === last);
+        last = move;
+        const suf = suffixes[Math.floor(Math.random() * 3)];
+        const finalMove = move + suf;
+        scramble += finalMove + ' ';
+        applyMove(finalMove);
+      }
+
+      document.getElementById('scramble').innerText = 'Scramble: ' + scramble.trim();
+      renderCube();
+      document.getElementById('timer').innerText = '0.00';
+      document.getElementById('timer').className = '';
+    }
+
+    function rotateFace(face, clockwise) {
+      const current = [...cube[face]];
+      const rotated = clockwise ? 
+        [current[6], current[3], current[0],
+         current[7], current[4], current[1],
+         current[8], current[5], current[2]] :
+        [current[2], current[5], current[8],
+         current[1], current[4], current[7],
+         current[0], current[3], current[6]];
+      cube[face] = rotated;
+    }
+
+    function applyMove(move) {
+      const face = move[0];
+      const isDouble = move.includes('2');
+      const isCCW = move.includes("'");
+      
+      for (let i = 0; i < (isDouble ? 2 : 1); i++) {
+        rotateFace(face, !isCCW);
+        rotateAdjacent(face, !isCCW);
+      }
+    }
+
+    function rotateAdjacent(face, clockwise) {
+      switch (face) {
+        case 'U':
+          if (clockwise) {
+            const temp = [cube.F[0], cube.F[1], cube.F[2]];
+            cube.F[0] = cube.R[0]; cube.F[1] = cube.R[1]; cube.F[2] = cube.R[2];
+            cube.R[0] = cube.B[0]; cube.R[1] = cube.B[1]; cube.R[2] = cube.B[2];
+            cube.B[0] = cube.L[0]; cube.B[1] = cube.L[1]; cube.B[2] = cube.L[2];
+            cube.L[0] = temp[0]; cube.L[1] = temp[1]; cube.L[2] = temp[2];
+          } else {
+            const temp = [cube.F[0], cube.F[1], cube.F[2]];
+            cube.F[0] = cube.L[0]; cube.F[1] = cube.L[1]; cube.F[2] = cube.L[2];
+            cube.L[0] = cube.B[0]; cube.L[1] = cube.B[1]; cube.L[2] = cube.B[2];
+            cube.B[0] = cube.R[0]; cube.B[1] = cube.R[1]; cube.B[2] = cube.R[2];
+            cube.R[0] = temp[0]; cube.R[1] = temp[1]; cube.R[2] = temp[2];
+          }
+          break;
+          
+        case 'D':
+          if (clockwise) {
+            const temp = [cube.F[6], cube.F[7], cube.F[8]];
+            cube.F[6] = cube.L[6]; cube.F[7] = cube.L[7]; cube.F[8] = cube.L[8];
+            cube.L[6] = cube.B[6]; cube.L[7] = cube.B[7]; cube.L[8] = cube.B[8];
+            cube.B[6] = cube.R[6]; cube.B[7] = cube.R[7]; cube.B[8] = cube.R[8];
+            cube.R[6] = temp[0]; cube.R[7] = temp[1]; cube.R[8] = temp[2];
+          } else {
+            const temp = [cube.F[6], cube.F[7], cube.F[8]];
+            cube.F[6] = cube.R[6]; cube.F[7] = cube.R[7]; cube.F[8] = cube.R[8];
+            cube.R[6] = cube.B[6]; cube.R[7] = cube.B[7]; cube.R[8] = cube.B[8];
+            cube.B[6] = cube.L[6]; cube.B[7] = cube.L[7]; cube.B[8] = cube.L[8];
+            cube.L[6] = temp[0]; cube.L[7] = temp[1]; cube.L[8] = temp[2];
+          }
+          break;
+          
+        case 'F':
+          if (clockwise) {
+            const tempU = [cube.U[6], cube.U[7], cube.U[8]];
+            cube.U[6] = cube.L[8]; cube.U[7] = cube.L[5]; cube.U[8] = cube.L[2];
+            cube.L[2] = cube.D[0]; cube.L[5] = cube.D[1]; cube.L[8] = cube.D[2];
+            cube.D[0] = cube.R[6]; cube.D[1] = cube.R[3]; cube.D[2] = cube.R[0];
+            cube.R[0] = tempU[0]; cube.R[3] = tempU[1]; cube.R[6] = tempU[2];
+          } else {
+            const tempU = [cube.U[6], cube.U[7], cube.U[8]];
+            cube.U[6] = cube.R[0]; cube.U[7] = cube.R[3]; cube.U[8] = cube.R[6];
+            cube.R[0] = cube.D[2]; cube.R[3] = cube.D[1]; cube.R[6] = cube.D[0];
+            cube.D[0] = cube.L[2]; cube.D[1] = cube.L[5]; cube.D[2] = cube.L[8];
+            cube.L[2] = tempU[2]; cube.L[5] = tempU[1]; cube.L[8] = tempU[0];
+          }
+          break;
+          
+        case 'B':
+          if (clockwise) {
+            const tempU = [cube.U[0], cube.U[1], cube.U[2]];
+            cube.U[0] = cube.R[2]; cube.U[1] = cube.R[5]; cube.U[2] = cube.R[8];
+            cube.R[2] = cube.D[8]; cube.R[5] = cube.D[7]; cube.R[8] = cube.D[6];
+            cube.D[6] = cube.L[0]; cube.D[7] = cube.L[3]; cube.D[8] = cube.L[6];
+            cube.L[0] = tempU[2]; cube.L[3] = tempU[1]; cube.L[6] = tempU[0];
+          } else {
+            const tempU = [cube.U[0], cube.U[1], cube.U[2]];
+            cube.U[0] = cube.L[6]; cube.U[1] = cube.L[3]; cube.U[2] = cube.L[0];
+            cube.L[0] = cube.D[6]; cube.L[3] = cube.D[7]; cube.L[6] = cube.D[8];
+            cube.D[6] = cube.R[8]; cube.D[7] = cube.R[5]; cube.D[8] = cube.R[2];
+            cube.R[2] = tempU[0]; cube.R[5] = tempU[1]; cube.R[8] = tempU[2];
+          }
+          break;
+          
+        case 'L':
+          if (clockwise) {
+            const tempU = [cube.U[0], cube.U[3], cube.U[6]];
+            cube.U[0] = cube.B[8]; cube.U[3] = cube.B[5]; cube.U[6] = cube.B[2];
+            cube.B[2] = cube.D[6]; cube.B[5] = cube.D[3]; cube.B[8] = cube.D[0];
+            cube.D[0] = cube.F[0]; cube.D[3] = cube.F[3]; cube.D[6] = cube.F[6];
+            cube.F[0] = tempU[0]; cube.F[3] = tempU[1]; cube.F[6] = tempU[2];
+          } else {
+            const tempU = [cube.U[0], cube.U[3], cube.U[6]];
+            cube.U[0] = cube.F[0]; cube.U[3] = cube.F[3]; cube.U[6] = cube.F[6];
+            cube.F[0] = cube.D[0]; cube.F[3] = cube.D[3]; cube.F[6] = cube.D[6];
+            cube.D[0] = cube.B[8]; cube.D[3] = cube.B[5]; cube.D[6] = cube.B[2];
+            cube.B[2] = cube.U[6]; cube.B[5] = cube.U[3]; cube.B[8] = cube.U[0];
+          }
+          break;
+          
+        case 'R':
+          if (clockwise) {
+            const tempU = [cube.U[2], cube.U[5], cube.U[8]];
+            cube.U[2] = cube.F[2]; cube.U[5] = cube.F[5]; cube.U[8] = cube.F[8];
+            cube.F[2] = cube.D[2]; cube.F[5] = cube.D[5]; cube.F[8] = cube.D[8];
+            cube.D[2] = cube.B[6]; cube.D[5] = cube.B[3]; cube.D[8] = cube.B[0];
+            cube.B[0] = tempU[2]; cube.B[3] = tempU[1]; cube.B[6] = tempU[0];
+          } else {
+            const tempU = [cube.U[2], cube.U[5], cube.U[8]];
+            cube.U[2] = cube.B[6]; cube.U[5] = cube.B[3]; cube.U[8] = cube.B[0];
+            cube.B[0] = cube.D[8]; cube.B[3] = cube.D[5]; cube.B[6] = cube.D[2];
+            cube.D[2] = cube.F[2]; cube.D[5] = cube.F[5]; cube.D[8] = cube.F[8];
+            cube.F[2] = tempU[0]; cube.F[5] = tempU[1]; cube.F[8] = tempU[2];
+          }
+          break;
+      }
+    }
+
+    function renderCube() {
+      const display = document.getElementById('cube-display');
+      display.innerHTML = '';
+
+      // Top face (U)
+      const top = document.createElement('div');
+      top.className = 'cube-row';
+      const space = document.createElement('div');
+      space.style.width = '96px';
+      top.appendChild(space);
+      top.appendChild(createFace(cube.U));
+      display.appendChild(top);
+
+      // Middle faces (L, F, R, B)
+      const mid = document.createElement('div');
+      mid.className = 'cube-row';
+      mid.appendChild(createFace(cube.L));
+      mid.appendChild(createFace(cube.F));
+      mid.appendChild(createFace(cube.R));
+      mid.appendChild(createFace(cube.B));
+      display.appendChild(mid);
+
+      // Bottom face (D)
+      const bot = document.createElement('div');
+      bot.className = 'cube-row';
+      const space2 = document.createElement('div');
+      space2.style.width = '96px';
+      bot.appendChild(space2);
+      bot.appendChild(createFace(cube.D));
+      display.appendChild(bot);
+    }
+
+    function createFace(faceColors) {
+      const face = document.createElement('div');
+      face.className = 'cube-face';
+      for (let i = 0; i < 9; i++) {
+        const sticker = document.createElement('div');
+        sticker.className = faceColors[i];
+        face.appendChild(sticker);
+      }
+      return face;
+    }
+
+    // Statistics functions
+    function updateStats() {
+      // Update session count
+      document.getElementById('session-count').textContent = sessionTimes.length;
+      
+      // Update best time
+      if (sessionTimes.length > 0) {
+        const bestTime = Math.min(...sessionTimes.map(t => t.time));
+        document.getElementById('best-time').textContent = bestTime.toFixed(2);
+        const bestIndex = sessionTimes.findIndex(t => t.time === bestTime);
+        document.getElementById('best-time-details').textContent = `Solve #${sessionTimes.length - bestIndex}`;
+      } else {
+        document.getElementById('best-time').textContent = '--';
+        document.getElementById('best-time-details').textContent = '';
+      }
+      
+      // Update averages
+      updateAverageStats(5);
+      updateAverageStats(12);
+      updateAverageStats(50);
+      updateAverageStats(100);
+    }
+    
+    function updateAverageStats(count) {
+      const aoElement = document.getElementById(`ao${count}`);
+      const bpaElement = document.getElementById(`ao${count}-bpa`);
+      const wpaElement = document.getElementById(`ao${count}-wpa`);
+      const targetElement = document.getElementById(`ao${count}-target`);
+      
+      if (sessionTimes.length < count) {
+        aoElement.textContent = '--';
+        bpaElement.textContent = '--';
+        wpaElement.textContent = '--';
+        targetElement.textContent = '--';
+        aoElement.className = 'stats-value';
+        return;
+      }
+      
+      const recentTimes = sessionTimes.slice(0, count).map(t => t.time);
+      const sortedTimes = [...recentTimes].sort((a, b) => a - b);
+      
+      // Calculate average according to WCA rules
+      let avg;
+      if (count >= 5) {
+        // For averages of 5 or more, drop best and worst
+        const trimmed = sortedTimes.slice(1, -1);
+        avg = trimmed.reduce((sum, t) => sum + t, 0) / trimmed.length;
+      } else {
+        // For averages less than 5, use all times
+        avg = recentTimes.reduce((sum, t) => sum + t, 0) / count;
+      }
+      
+      // Calculate BPA (best possible average)
+      let bpa;
+      if (count >= 5) {
+        // For BPA, drop the worst time and include the next best time
+        const bpaTimes = [...recentTimes].sort((a, b) => a - b);
+        const bpaTrimmed = bpaTimes.slice(0, -1); // drop worst
+        if (count >= 12) {
+          // For larger averages, drop best and worst from the trimmed set
+          bpa = bpaTrimmed.slice(1, -1).reduce((sum, t) => sum + t, 0) / (bpaTrimmed.length - 2);
+        } else {
+          // For ao5, just drop worst
+          bpa = bpaTrimmed.reduce((sum, t) => sum + t, 0) / bpaTrimmed.length;
+        }
+      } else {
+        // For averages less than 5, BPA is the average of the best times
+        bpa = sortedTimes.slice(0, -1).reduce((sum, t) => sum + t, 0) / (count - 1);
+      }
+      
+      // Calculate WPA (worst possible average)
+      let wpa;
+      if (count >= 5) {
+        // For WPA, drop the best time and include the next worst time
+        const wpaTimes = [...recentTimes].sort((a, b) => a - b);
+        const wpaTrimmed = wpaTimes.slice(1); // drop best
+        if (count >= 12) {
+          // For larger averages, drop best and worst from the trimmed set
+          wpa = wpaTrimmed.slice(1, -1).reduce((sum, t) => sum + t, 0) / (wpaTrimmed.length - 2);
+        } else {
+          // For ao5, just drop best
+          wpa = wpaTrimmed.reduce((sum, t) => sum + t, 0) / wpaTrimmed.length;
+        }
+      } else {
+        // For averages less than 5, WPA is the average of the worst times
+        wpa = sortedTimes.slice(1).reduce((sum, t) => sum + t, 0) / (count - 1);
+      }
+      
+      // Calculate target time (time needed to not lose current average)
+      let target = '--';
+      if (count >= 5 && sessionTimes.length > count) {
+        const prevTimes = sessionTimes.slice(1, count + 1).map(t => t.time);
+        const prevSorted = [...prevTimes].sort((a, b) => a - b);
+        const prevTrimmed = prevSorted.slice(1, -1);
+        const prevAvg = prevTrimmed.reduce((sum, t) => sum + t, 0) / prevTrimmed.length;
+        
+        // Calculate what the new solve needs to be to maintain or improve the average
+        const sumOthers = prevTrimmed.reduce((sum, t) => sum + t, 0);
+        const currentFirst = recentTimes[0];
+        const newSum = sumOthers + currentFirst;
+        const newAvg = newSum / prevTrimmed.length;
+        
+        if (newAvg <= prevAvg) {
+          target = 'Any';
+        } else {
+          // Calculate maximum time that would keep the average the same or better
+          const maxTime = (prevAvg * prevTrimmed.length) - sumOthers;
+          target = maxTime.toFixed(2);
+        }
+      }
+      
+      // Update DOM
+      aoElement.textContent = avg.toFixed(2);
+      bpaElement.textContent = bpa.toFixed(2);
+      wpaElement.textContent = wpa.toFixed(2);
+      targetElement.textContent = target;
+      
+      // Color coding based on comparison with previous average
+      if (count >= 5 && sessionTimes.length > count) {
+        const prevTimes = sessionTimes.slice(1, count + 1).map(t => t.time);
+        const prevSorted = [...prevTimes].sort((a, b) => a - b);
+        const prevTrimmed = prevSorted.slice(1, -1);
+        const prevAvg = prevTrimmed.reduce((sum, t) => sum + t, 0) / prevTrimmed.length;
+        
+        if (avg < prevAvg) {
+          aoElement.className = 'stats-value good';
+        } else if (avg > prevAvg) {
+          aoElement.className = 'stats-value bad';
+        } else {
+          aoElement.className = 'stats-value average';
+        }
+      } else {
+        aoElement.className = 'stats-value';
+      }
+    }
+    
+    function renderTimesList() {
+      const timesList = document.getElementById('times-list');
+      timesList.innerHTML = '';
+      
+      sessionTimes.forEach((timeObj, index) => {
+        const li = document.createElement('li');
+        li.className = 'time-item';
+        
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'time-value';
+        timeSpan.textContent = timeObj.time.toFixed(2);
+        
+        const scrambleSpan = document.createElement('span');
+        scrambleSpan.textContent = `#${sessionTimes.length - index}`;
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'time-actions';
+        
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'time-action';
+        deleteButton.textContent = 'Delete';
+        deleteButton.onclick = (e) => {
+          e.stopPropagation();
+          deleteTime(index);
+        };
+        
+        actionsDiv.appendChild(deleteButton);
+        
+        li.appendChild(timeSpan);
+        li.appendChild(scrambleSpan);
+        li.appendChild(actionsDiv);
+        
+        timesList.appendChild(li);
+      });
+    }
+    
+    function deleteTime(index) {
+      sessionTimes.splice(index, 1);
+      times = times.filter(t => !sessionTimes.includes(t));
+      localStorage.setItem('cubeTimes', JSON.stringify(times));
+      updateStats();
+      renderTimesList();
+    }
+
+    // Spacebar timer control
+    document.addEventListener('keydown', function(e) {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleTimerAction();
+      }
+    });
+
+    // Initialize
+    window.onload = function() {
+      cube = getSolvedCube();
+      renderCube();
+      
+      // Load any existing times
+      if (times.length > 0) {
+        sessionTimes = [...times].slice(0, 100); // Load up to 100 most recent times
+        updateStats();
+        renderTimesList();
+      }
+    };
+    // 2x2 Cube functionality
+    let currentCubeSize = '3x3'; // Default to 3x3
+    
+    function toggleCubeSize() {
+      currentCubeSize = currentCubeSize === '3x3' ? '2x2' : '3x3';
+      document.getElementById('cube-size-toggle').textContent = `Switch to ${currentCubeSize === '3x3' ? '2x2' : '3x3'}`;
+      generateScramble();
+    }
+    
+    function getSolved2x2Cube() {
+      return {
+        U: Array(4).fill('U'),
+        D: Array(4).fill('D'),
+        F: Array(4).fill('F'),
+        B: Array(4).fill('B'),
+        L: Array(4).fill('L'),
+        R: Array(4).fill('R')
+      };
+    }
+    
+    function generate2x2Scramble() {
+      cube = getSolved2x2Cube();
+      const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
+      const suffixes = ['', "'", '2'];
+      let scramble = '', last = '';
+    
+      for (let i = 0; i < 10; i++) { // Fewer moves for 2x2
+        let move;
+        do {
+          move = moves[Math.floor(Math.random() * moves.length)];
+        } while (move === last);
+        last = move;
+        const suf = suffixes[Math.floor(Math.random() * 3)];
+        const finalMove = move + suf;
+        scramble += finalMove + ' ';
+        apply2x2Move(finalMove);
+      }
+    
+      document.getElementById('scramble').innerText = 'Scramble: ' + scramble.trim();
+      render2x2Cube();
+    }
+    
+    function rotate2x2Face(face, clockwise) {
+      const current = [...cube[face]];
+      const rotated = clockwise ? 
+        [current[2], current[0],
+         current[3], current[1]] :
+        [current[1], current[3],
+         current[0], current[2]];
+      cube[face] = rotated;
+    }
+    
+    function apply2x2Move(move) {
+      const face = move[0];
+      const isDouble = move.includes('2');
+      const isCCW = move.includes("'");
+      
+      for (let i = 0; i < (isDouble ? 2 : 1); i++) {
+        rotate2x2Face(face, !isCCW);
+        rotate2x2Adjacent(face, !isCCW);
+      }
+    }
+    
+    function rotate2x2Adjacent(face, clockwise) {
+      switch (face) {
+        case 'U':
+          if (clockwise) {
+            const temp = [cube.F[0], cube.F[1]];
+            cube.F[0] = cube.R[0]; cube.F[1] = cube.R[1];
+            cube.R[0] = cube.B[0]; cube.R[1] = cube.B[1];
+            cube.B[0] = cube.L[0]; cube.B[1] = cube.L[1];
+            cube.L[0] = temp[0]; cube.L[1] = temp[1];
+          } else {
+            const temp = [cube.F[0], cube.F[1]];
+            cube.F[0] = cube.L[0]; cube.F[1] = cube.L[1];
+            cube.L[0] = cube.B[0]; cube.L[1] = cube.B[1];
+            cube.B[0] = cube.R[0]; cube.B[1] = cube.R[1];
+            cube.R[0] = temp[0]; cube.R[1] = temp[1];
+          }
+          break;
+          
+        case 'D':
+          if (clockwise) {
+            const temp = [cube.F[2], cube.F[3]];
+            cube.F[2] = cube.L[2]; cube.F[3] = cube.L[3];
+            cube.L[2] = cube.B[2]; cube.L[3] = cube.B[3];
+            cube.B[2] = cube.R[2]; cube.B[3] = cube.R[3];
+            cube.R[2] = temp[0]; cube.R[3] = temp[1];
+          } else {
+            const temp = [cube.F[2], cube.F[3]];
+            cube.F[2] = cube.R[2]; cube.F[3] = cube.R[3];
+            cube.R[2] = cube.B[2]; cube.R[3] = cube.B[3];
+            cube.B[2] = cube.L[2]; cube.B[3] = cube.L[3];
+            cube.L[2] = temp[0]; cube.L[3] = temp[1];
+          }
+          break;
+          
+        case 'F':
+          if (clockwise) {
+            const tempU = [cube.U[2], cube.U[3]];
+            cube.U[2] = cube.L[3]; cube.U[3] = cube.L[1];
+            cube.L[1] = cube.D[0]; cube.L[3] = cube.D[1];
+            cube.D[0] = cube.R[2]; cube.D[1] = cube.R[0];
+            cube.R[0] = tempU[1]; cube.R[2] = tempU[0];
+          } else {
+            const tempU = [cube.U[2], cube.U[3]];
+            cube.U[2] = cube.R[0]; cube.U[3] = cube.R[2];
+            cube.R[0] = cube.D[1]; cube.R[2] = cube.D[0];
+            cube.D[0] = cube.L[1]; cube.D[1] = cube.L[3];
+            cube.L[1] = tempU[1]; cube.L[3] = tempU[0];
+          }
+          break;
+          
+        case 'B':
+          if (clockwise) {
+            const tempU = [cube.U[0], cube.U[1]];
+            cube.U[0] = cube.R[1]; cube.U[1] = cube.R[3];
+            cube.R[1] = cube.D[3]; cube.R[3] = cube.D[2];
+            cube.D[2] = cube.L[0]; cube.D[3] = cube.L[2];
+            cube.L[0] = tempU[1]; cube.L[2] = tempU[0];
+          } else {
+            const tempU = [cube.U[0], cube.U[1]];
+            cube.U[0] = cube.L[2]; cube.U[1] = cube.L[0];
+            cube.L[0] = cube.D[2]; cube.L[2] = cube.D[3];
+            cube.D[2] = cube.R[3]; cube.D[3] = cube.R[1];
+            cube.R[1] = tempU[0]; cube.R[3] = tempU[1];
+          }
+          break;
+          
+        case 'L':
+          if (clockwise) {
+            const tempU = [cube.U[0], cube.U[2]];
+            cube.U[0] = cube.B[3]; cube.U[2] = cube.B[1];
+            cube.B[1] = cube.D[2]; cube.B[3] = cube.D[0];
+            cube.D[0] = cube.F[0]; cube.D[2] = cube.F[2];
+            cube.F[0] = tempU[0]; cube.F[2] = tempU[1];
+          } else {
+            const tempU = [cube.U[0], cube.U[2]];
+            cube.U[0] = cube.F[0]; cube.U[2] = cube.F[2];
+            cube.F[0] = cube.D[0]; cube.F[2] = cube.D[2];
+            cube.D[0] = cube.B[3]; cube.D[2] = cube.B[1];
+            cube.B[1] = tempU[1]; cube.B[3] = tempU[0];
+          }
+          break;
+          
+        case 'R':
+          if (clockwise) {
+            const tempU = [cube.U[1], cube.U[3]];
+            cube.U[1] = cube.F[1]; cube.U[3] = cube.F[3];
+            cube.F[1] = cube.D[1]; cube.F[3] = cube.D[3];
+            cube.D[1] = cube.B[0]; cube.D[3] = cube.B[2];
+            cube.B[0] = tempU[1]; cube.B[2] = tempU[0];
+          } else {
+            const tempU = [cube.U[1], cube.U[3]];
+            cube.U[1] = cube.B[2]; cube.U[3] = cube.B[0];
+            cube.B[0] = cube.D[3]; cube.B[2] = cube.D[1];
+            cube.D[1] = cube.F[1]; cube.D[3] = cube.F[3];
+            cube.F[1] = tempU[0]; cube.F[3] = tempU[1];
+          }
+          break;
+      }
+    }
+    
+    function render2x2Cube() {
+      const display = document.getElementById('cube-display');
+      display.innerHTML = '';
+    
+      // Top face (U)
+      const top = document.createElement('div');
+      top.className = 'cube-row';
+      const space = document.createElement('div');
+      space.style.width = '64px';
+      top.appendChild(space);
+      top.appendChild(create2x2Face(cube.U));
+      display.appendChild(top);
+    
+      // Middle faces (L, F, R, B)
+      const mid = document.createElement('div');
+      mid.className = 'cube-row';
+      mid.appendChild(create2x2Face(cube.L));
+      mid.appendChild(create2x2Face(cube.F));
+      mid.appendChild(create2x2Face(cube.R));
+      mid.appendChild(create2x2Face(cube.B));
+      display.appendChild(mid);
+    
+      // Bottom face (D)
+      const bot = document.createElement('div');
+      bot.className = 'cube-row';
+      const space2 = document.createElement('div');
+      space2.style.width = '64px';
+      bot.appendChild(space2);
+      bot.appendChild(create2x2Face(cube.D));
+      display.appendChild(bot);
+    }
+    
+    function create2x2Face(faceColors) {
+      const face = document.createElement('div');
+      face.className = 'cube-face';
+      face.style.gridTemplateColumns = 'repeat(2, 30px)';
+      face.style.gridTemplateRows = 'repeat(2, 30px)';
+      for (let i = 0; i < 4; i++) {
+        const sticker = document.createElement('div');
+        sticker.className = faceColors[i];
+        sticker.style.width = '30px';
+        sticker.style.height = '30px';
+        face.appendChild(sticker);
+      }
+      return face;
+    }
+    
+    // Modify the existing generateScramble function to handle both cube sizes
+    function generateScramble() {
+      if (currentCubeSize === '2x2') {
+        generate2x2Scramble();
+      } else {
+        // Original 3x3 scramble code
+        cube = getSolvedCube();
+        const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
+        const suffixes = ['', "'", '2'];
+        let scramble = '', last = '';
+    
+        for (let i = 0; i < 20; i++) {
+          let move;
+          do {
+            move = moves[Math.floor(Math.random() * moves.length)];
+          } while (move === last);
+          last = move;
+          const suf = suffixes[Math.floor(Math.random() * 3)];
+          const finalMove = move + suf;
+          scramble += finalMove + ' ';
+          applyMove(finalMove);
+        }
+    
+        document.getElementById('scramble').innerText = 'Scramble: ' + scramble.trim();
+        renderCube();
+      }
+      document.getElementById('timer').innerText = '0.00';
+      document.getElementById('timer').className = '';
+    }
+    
+    // Add a toggle button to the timer section HTML (add this just before the timer instructions div)
+
+// Cube size dropdown functionality
+const cubeSizeToggle = document.getElementById('cubeSizeToggle');
+const cubeSizeOptions = document.getElementById('cubeSizeOptions');
+
+cubeSizeToggle.addEventListener('click', function(e) {
+  e.stopPropagation();
+  cubeSizeOptions.style.display = cubeSizeOptions.style.display === 'block' ? 'none' : 'block';
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function() {
+  if (cubeSizeOptions.style.display === 'block') {
+    cubeSizeOptions.style.display = 'none';
+  }
+});
+
+// Prevent dropdown from closing when clicking inside it
+cubeSizeOptions.addEventListener('click', function(e) {
+  e.stopPropagation();
+});
+
+function changeCubeSize(size) {
+  currentCubeSize = size;
+  cubeSizeToggle.textContent = `${size} Cube`;
+  cubeSizeOptions.style.display = 'none';
+  generateScramble();
+}
+  </script>
+</body>
+</html>
