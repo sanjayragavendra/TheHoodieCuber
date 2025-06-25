@@ -3,6 +3,318 @@
 <head>
   <title>The Hoodie Cuber</title>
   <style>
+    /* Add these new styles to your existing CSS */
+    
+    /* Login Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content {
+      background-color: var(--panel);
+      padding: 30px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      animation: fadeIn 0.3s ease-out;
+      text-align: center;
+    }
+    
+    .modal h2 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+    
+    .github-login-btn {
+      background-color: #24292e;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px auto;
+      transition: all 0.3s ease;
+    }
+    
+    .github-login-btn:hover {
+      background-color: #2d3338;
+      transform: translateY(-2px);
+    }
+    
+    .github-login-btn i {
+      margin-right: 10px;
+      font-size: 20px;
+    }
+    
+    /* User Info */
+    .user-info {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: var(--panel);
+      padding: 10px 15px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      z-index: 99;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    
+    .user-info img {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    
+    .logout-btn {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: bold;
+      padding: 5px;
+      margin-left: 10px;
+    }
+    
+    /* Add Font Awesome for GitHub icon */
+    .fa-github {
+      font-size: inherit;
+    }
+  </style>
+  <!-- Add Font Awesome for GitHub icon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- User Info (shown when logged in) -->
+  <div class="user-info" id="userInfo" style="display: none;">
+    <img id="userAvatar" src="" alt="User Avatar">
+    <span id="usernameDisplay"></span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <h2>Login with GitHub</h2>
+      <p>Sign in to save and track your solve times</p>
+      <button class="github-login-btn" onclick="loginWithGitHub()">
+        <i class="fab fa-github"></i> Continue with GitHub
+      </button>
+    </div>
+  </div>
+
+  <!-- Rest of your existing HTML remains the same -->
+
+  <script>
+    // GitHub OAuth Configuration
+    const GITHUB_CLIENT_ID = 'Ov23li3dYeqou8G9UKqu'; // Replace with your actual client ID
+    const GITHUB_REDIRECT_URI = window.location.href.includes('localhost') 
+      ? 'http://localhost:8000' // For local development
+      : 'https://sanjayragavendra.github.io/TheHoodieCuber/'; // Replace with your GitHub Pages URL
+    
+    // User data
+    let currentUser = null;
+    
+    // Initialize the app
+    window.onload = function() {
+      cube = getSolvedCube();
+      renderCube();
+      
+      // Check for existing session
+      const userData = localStorage.getItem('githubCubeUser');
+      if (userData) {
+        currentUser = JSON.parse(userData);
+        updateUserUI();
+        
+        // Load user's times
+        loadUserTimes();
+      } else {
+        // Show login modal if no user is logged in
+        setTimeout(() => {
+          document.getElementById('loginModal').style.display = 'flex';
+        }, 500);
+      }
+    };
+    
+    // GitHub OAuth Login
+    function loginWithGitHub() {
+      const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=user:email`;
+      window.location.href = authUrl;
+    }
+    
+    // Check for OAuth callback
+    function checkForOAuthCallback() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      
+      if (code) {
+        // Remove code from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Exchange code for access token (this would normally be done server-side)
+        // For this demo, we'll use a proxy server or mock the response
+        exchangeCodeForToken(code);
+      }
+    }
+    
+    // Mock function to exchange code for token
+    // In a real app, this would be a server-side call
+    async function exchangeCodeForToken(code) {
+      // Show loading state
+      document.getElementById('loginModal').querySelector('button').innerHTML = 
+        '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+      
+      try {
+        // In a real app, you would call your backend here
+        // For demo purposes, we'll mock the response
+        const mockUserData = {
+          login: 'githubuser',
+          avatar_url: 'https://avatars.githubusercontent.com/u/1234567?v=4',
+          name: 'GitHub User',
+          access_token: 'mock_access_token_123'
+        };
+        
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Save user data
+        currentUser = {
+          username: mockUserData.login,
+          avatar: mockUserData.avatar_url,
+          name: mockUserData.name,
+          token: mockUserData.access_token
+        };
+        
+        localStorage.setItem('githubCubeUser', JSON.stringify(currentUser));
+        
+        // Update UI
+        updateUserUI();
+        document.getElementById('loginModal').style.display = 'none';
+        
+        // Load user's times
+        loadUserTimes();
+      } catch (error) {
+        console.error('Authentication failed:', error);
+        alert('Authentication failed. Please try again.');
+        document.getElementById('loginModal').querySelector('button').innerHTML = 
+          '<i class="fab fa-github"></i> Continue with GitHub';
+      }
+    }
+    
+    // Update UI with user info
+    function updateUserUI() {
+      if (currentUser) {
+        document.getElementById('userInfo').style.display = 'flex';
+        document.getElementById('usernameDisplay').textContent = currentUser.name || currentUser.username;
+        document.getElementById('userAvatar').src = currentUser.avatar;
+      } else {
+        document.getElementById('userInfo').style.display = 'none';
+      }
+    }
+    
+    // Load user's times from localStorage
+    function loadUserTimes() {
+      if (currentUser) {
+        const userTimes = localStorage.getItem(`cubeTimes_${currentUser.username}`);
+        times = userTimes ? JSON.parse(userTimes) : [];
+        sessionTimes = [...times].slice(0, 100);
+        
+        updateStats();
+        renderTimesList();
+      }
+    }
+    
+    // Save user's times to localStorage
+    function saveUserTimes() {
+      if (currentUser) {
+        localStorage.setItem(`cubeTimes_${currentUser.username}`, JSON.stringify(times));
+      }
+    }
+    
+    // Logout
+    function logout() {
+      // Save current times before logging out
+      saveUserTimes();
+      
+      // Clear user session
+      currentUser = null;
+      localStorage.removeItem('githubCubeUser');
+      
+      // Reset times
+      times = [];
+      sessionTimes = [];
+      
+      // Update UI
+      updateUserUI();
+      updateStats();
+      renderTimesList();
+      
+      // Show login modal
+      document.getElementById('loginModal').style.display = 'flex';
+    }
+    
+    // Modify your existing stopTimer function to save times per user
+    function stopTimer() {
+      if (!running) return;
+      running = false;
+      const timerElem = document.getElementById('timer');
+      const time = ((Date.now() - startTime) / 1000).toFixed(2);
+      timerElem.innerText = time + 's';
+      timerElem.classList.remove('running');
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      
+      // Save the time
+      const timeObj = {
+        time: parseFloat(time),
+        scramble: document.getElementById('scramble').textContent.replace('Scramble: ', ''),
+        date: new Date().toISOString()
+      };
+      
+      times.unshift(timeObj);
+      sessionTimes.unshift(timeObj);
+      
+      // Keep only the last 1000 times
+      if (times.length > 1000) {
+        times.pop();
+      }
+      
+      // Save to localStorage
+      saveUserTimes();
+      
+      // Update stats and times list
+      updateStats();
+      renderTimesList();
+      
+      // Generate new scramble
+      generateScramble();
+    }
+    
+    // Check for OAuth callback when page loads
+    checkForOAuthCallback();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>The Hoodie Cuber</title>
+  <style>
     :root {
       --bg: #121212;
       --accent: #00bcd4;
