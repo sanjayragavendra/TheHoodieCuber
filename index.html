@@ -308,41 +308,6 @@ body::before {
       transform: translateY(-2px);
     }
 
-    .cube-display {
-      margin: 20px auto;
-      display: inline-block;
-      background: rgba(34, 34, 34, 0.8);
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    }
-
-    .cube-face {
-      display: grid;
-      grid-template-columns: repeat(3, 30px);
-      grid-template-rows: repeat(3, 30px);
-      gap: 2px;
-      margin: 5px;
-    }
-
-    .cube-face div {
-      border-radius: 3px;
-      width: 30px;
-      height: 30px;
-    }
-
-    .cube-row {
-      display: flex;
-      justify-content: center;
-    }
-
-    .U { background-color: #ffffff; }
-    .D { background-color: #ffff00; }
-    .F { background-color: #00ff00; }
-    .B { background-color: #0000ff; }
-    .L { background-color: #ff8000; }
-    .R { background-color: #ff0000; }
-
     /* Stats container */
     .stats-container {
       display: grid;
@@ -598,16 +563,6 @@ body::before {
         font-size: 36px;
       }
       
-      .cube-face {
-        grid-template-columns: repeat(3, 25px);
-        grid-template-rows: repeat(3, 25px);
-      }
-      
-      .cube-face div {
-        width: 25px;
-        height: 25px;
-      }
-
       .bubble-grid {
         grid-template-columns: 1fr 1fr;
         gap: 15px;
@@ -641,7 +596,6 @@ body::before {
   </a>
 </header>
   
-  <!-- Bubble Grid -->
   <div class="bubble-grid">
     <div class="bubble" onclick="downloadPDF('OLL.pdf')">OLL</div>
     <div class="bubble" onclick="downloadPDF('PLL.pdf')">PLL</div>
@@ -649,7 +603,6 @@ body::before {
     <div class="bubble" onclick="downloadPDF('2L-OLL.pdf')">2L-OLL</div>
   </div>
 
-  <!-- Three-dot menu -->
   <div class="menu-container">
     <button class="menu-button" id="menuButton">⋮</button>
     <div class="menu-options" id="menuOptions">
@@ -661,7 +614,6 @@ body::before {
     </div>
   </div>
 
-  <!-- PDF Viewer -->
   <div class="pdf-container" id="pdfContainer">
     <div class="pdf-header">
       <div class="pdf-title" id="pdfTitle"></div>
@@ -670,10 +622,9 @@ body::before {
     <iframe id="pdfFrame"></iframe>
   </div>
 
-  <!-- Timer -->
   <div id="timer-box">
     <div id="scramble">Scramble: --</div>
-    <div class="cube-display" id="cube-display"></div>
+    <img id="cube-display" src="" alt="Rubik's Cube Scramble" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.5); margin: 20px auto;">
     <div id="timer">0.00</div>
 	<div class="cube-size-selector">
   <button class="cube-size-toggle" id="cubeSizeToggle">3x3 Cube</button>
@@ -686,7 +637,6 @@ body::before {
 
     <div class="instructions">Press spacebar to start/stop timer</div>
 
-    <!-- Stats Container -->
     <div class="stats-container">
       <div class="stats-box">
         <h3>Current Session</h3>
@@ -777,16 +727,13 @@ body::before {
       </div>
     </div>
 
-    <!-- Times List -->
     <div class="times-container">
       <h3>Recent Times</h3>
       <ul class="times-list" id="times-list">
-        <!-- Times will be added here dynamically -->
-      </ul>
+        </ul>
     </div>
   </div>
 
-  <!-- Contact Info -->
   <div class="contact-info">
     <h2>Contact Me</h2>
     <p>Instagram: <a href="https://www.instagram.com/thehoodiecuber" target="_blank">thehoodiecuber </a></p>
@@ -799,10 +746,10 @@ body::before {
     let ready = false;
     let startTime;
     let animationFrameId;
-    let cube = {};
     let currentPDF = '';
     let times = JSON.parse(localStorage.getItem('cubeTimes')) || [];
     let sessionTimes = [];
+    let currentCubeSize = '3x3';
 
     // Menu toggle
     const menuButton = document.getElementById('menuButton');
@@ -950,24 +897,13 @@ function resetToHome() {
       animationFrameId = requestAnimationFrame(updateTimer);
     }
 
-    function getSolvedCube() {
-      return {
-        U: Array(9).fill('U'),
-        D: Array(9).fill('D'),
-        F: Array(9).fill('F'),
-        B: Array(9).fill('B'),
-        L: Array(9).fill('L'),
-        R: Array(9).fill('R')
-      };
-    }
-
     function generateScramble() {
-      cube = getSolvedCube();
       const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
       const suffixes = ['', "'", '2'];
       let scramble = '', last = '';
+      const scrambleLength = currentCubeSize === '3x3' ? 20 : 9;
 
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < scrambleLength; i++) {
         let move;
         do {
           move = moves[Math.floor(Math.random() * moves.length)];
@@ -976,179 +912,19 @@ function resetToHome() {
         const suf = suffixes[Math.floor(Math.random() * 3)];
         const finalMove = move + suf;
         scramble += finalMove + ' ';
-        applyMove(finalMove);
       }
 
-      document.getElementById('scramble').innerText = 'Scramble: ' + scramble.trim();
-      renderCube();
+      scramble = scramble.trim();
+      document.getElementById('scramble').innerText = 'Scramble: ' + scramble;
+      renderCube(scramble);
       document.getElementById('timer').innerText = '0.00';
       document.getElementById('timer').className = '';
     }
 
-    function rotateFace(face, clockwise) {
-      const current = [...cube[face]];
-      const rotated = clockwise ? 
-        [current[6], current[3], current[0],
-         current[7], current[4], current[1],
-         current[8], current[5], current[2]] :
-        [current[2], current[5], current[8],
-         current[1], current[4], current[7],
-         current[0], current[3], current[6]];
-      cube[face] = rotated;
-    }
-
-    function applyMove(move) {
-      const face = move[0];
-      const isDouble = move.includes('2');
-      const isCCW = move.includes("'");
-      
-      for (let i = 0; i < (isDouble ? 2 : 1); i++) {
-        rotateFace(face, !isCCW);
-        rotateAdjacent(face, !isCCW);
-      }
-    }
-
-    function rotateAdjacent(face, clockwise) {
-      switch (face) {
-        case 'U':
-          if (clockwise) {
-            const temp = [cube.F[0], cube.F[1], cube.F[2]];
-            cube.F[0] = cube.R[0]; cube.F[1] = cube.R[1]; cube.F[2] = cube.R[2];
-            cube.R[0] = cube.B[0]; cube.R[1] = cube.B[1]; cube.R[2] = cube.B[2];
-            cube.B[0] = cube.L[0]; cube.B[1] = cube.L[1]; cube.B[2] = cube.L[2];
-            cube.L[0] = temp[0]; cube.L[1] = temp[1]; cube.L[2] = temp[2];
-          } else {
-            const temp = [cube.F[0], cube.F[1], cube.F[2]];
-            cube.F[0] = cube.L[0]; cube.F[1] = cube.L[1]; cube.F[2] = cube.L[2];
-            cube.L[0] = cube.B[0]; cube.L[1] = cube.B[1]; cube.L[2] = cube.B[2];
-            cube.B[0] = cube.R[0]; cube.B[1] = cube.R[1]; cube.B[2] = cube.R[2];
-            cube.R[0] = temp[0]; cube.R[1] = temp[1]; cube.R[2] = temp[2];
-          }
-          break;
-          
-        case 'D':
-          if (clockwise) {
-            const temp = [cube.F[6], cube.F[7], cube.F[8]];
-            cube.F[6] = cube.L[6]; cube.F[7] = cube.L[7]; cube.F[8] = cube.L[8];
-            cube.L[6] = cube.B[6]; cube.L[7] = cube.B[7]; cube.L[8] = cube.B[8];
-            cube.B[6] = cube.R[6]; cube.B[7] = cube.R[7]; cube.B[8] = cube.R[8];
-            cube.R[6] = temp[0]; cube.R[7] = temp[1]; cube.R[8] = temp[2];
-          } else {
-            const temp = [cube.F[6], cube.F[7], cube.F[8]];
-            cube.F[6] = cube.R[6]; cube.F[7] = cube.R[7]; cube.F[8] = cube.R[8];
-            cube.R[6] = cube.B[6]; cube.R[7] = cube.B[7]; cube.R[8] = cube.B[8];
-            cube.B[6] = cube.L[6]; cube.B[7] = cube.L[7]; cube.B[8] = cube.L[8];
-            cube.L[6] = temp[0]; cube.L[7] = temp[1]; cube.L[8] = temp[2];
-          }
-          break;
-          
-        case 'F':
-          if (clockwise) {
-            const tempU = [cube.U[6], cube.U[7], cube.U[8]];
-            cube.U[6] = cube.L[8]; cube.U[7] = cube.L[5]; cube.U[8] = cube.L[2];
-            cube.L[2] = cube.D[0]; cube.L[5] = cube.D[1]; cube.L[8] = cube.D[2];
-            cube.D[0] = cube.R[6]; cube.D[1] = cube.R[3]; cube.D[2] = cube.R[0];
-            cube.R[0] = tempU[0]; cube.R[3] = tempU[1]; cube.R[6] = tempU[2];
-          } else {
-            const tempU = [cube.U[6], cube.U[7], cube.U[8]];
-            cube.U[6] = cube.R[0]; cube.U[7] = cube.R[3]; cube.U[8] = cube.R[6];
-            cube.R[0] = cube.D[2]; cube.R[3] = cube.D[1]; cube.R[6] = cube.D[0];
-            cube.D[0] = cube.L[2]; cube.D[1] = cube.L[5]; cube.D[2] = cube.L[8];
-            cube.L[2] = tempU[2]; cube.L[5] = tempU[1]; cube.L[8] = tempU[0];
-          }
-          break;
-          
-        case 'B':
-          if (clockwise) {
-            const tempU = [cube.U[0], cube.U[1], cube.U[2]];
-            cube.U[0] = cube.R[2]; cube.U[1] = cube.R[5]; cube.U[2] = cube.R[8];
-            cube.R[2] = cube.D[8]; cube.R[5] = cube.D[7]; cube.R[8] = cube.D[6];
-            cube.D[6] = cube.L[0]; cube.D[7] = cube.L[3]; cube.D[8] = cube.L[6];
-            cube.L[0] = tempU[2]; cube.L[3] = tempU[1]; cube.L[6] = tempU[0];
-          } else {
-            const tempU = [cube.U[0], cube.U[1], cube.U[2]];
-            cube.U[0] = cube.L[6]; cube.U[1] = cube.L[3]; cube.U[2] = cube.L[0];
-            cube.L[0] = cube.D[6]; cube.L[3] = cube.D[7]; cube.L[6] = cube.D[8];
-            cube.D[6] = cube.R[8]; cube.D[7] = cube.R[5]; cube.D[8] = cube.R[2];
-            cube.R[2] = tempU[0]; cube.R[5] = tempU[1]; cube.R[8] = tempU[2];
-          }
-          break;
-          
-        case 'L':
-          if (clockwise) {
-            const tempU = [cube.U[0], cube.U[3], cube.U[6]];
-            cube.U[0] = cube.B[8]; cube.U[3] = cube.B[5]; cube.U[6] = cube.B[2];
-            cube.B[2] = cube.D[6]; cube.B[5] = cube.D[3]; cube.B[8] = cube.D[0];
-            cube.D[0] = cube.F[0]; cube.D[3] = cube.F[3]; cube.D[6] = cube.F[6];
-            cube.F[0] = tempU[0]; cube.F[3] = tempU[1]; cube.F[6] = tempU[2];
-          } else {
-            const tempU = [cube.U[0], cube.U[3], cube.U[6]];
-            cube.U[0] = cube.F[0]; cube.U[3] = cube.F[3]; cube.U[6] = cube.F[6];
-            cube.F[0] = cube.D[0]; cube.F[3] = cube.D[3]; cube.F[6] = cube.D[6];
-            cube.D[0] = cube.B[8]; cube.D[3] = cube.B[5]; cube.D[6] = cube.B[2];
-            cube.B[2] = cube.U[6]; cube.B[5] = cube.U[3]; cube.B[8] = cube.U[0];
-          }
-          break;
-          
-        case 'R':
-          if (clockwise) {
-            const tempU = [cube.U[2], cube.U[5], cube.U[8]];
-            cube.U[2] = cube.F[2]; cube.U[5] = cube.F[5]; cube.U[8] = cube.F[8];
-            cube.F[2] = cube.D[2]; cube.F[5] = cube.D[5]; cube.F[8] = cube.D[8];
-            cube.D[2] = cube.B[6]; cube.D[5] = cube.B[3]; cube.D[8] = cube.B[0];
-            cube.B[0] = tempU[2]; cube.B[3] = tempU[1]; cube.B[6] = tempU[0];
-          } else {
-            const tempU = [cube.U[2], cube.U[5], cube.U[8]];
-            cube.U[2] = cube.B[6]; cube.U[5] = cube.B[3]; cube.U[8] = cube.B[0];
-            cube.B[0] = cube.D[8]; cube.B[3] = cube.D[5]; cube.B[6] = cube.D[2];
-            cube.D[2] = cube.F[2]; cube.D[5] = cube.F[5]; cube.D[8] = cube.F[8];
-            cube.F[2] = tempU[0]; cube.F[5] = tempU[1]; cube.F[8] = tempU[2];
-          }
-          break;
-      }
-    }
-
-    function renderCube() {
-      const display = document.getElementById('cube-display');
-      display.innerHTML = '';
-
-      // Top face (U)
-      const top = document.createElement('div');
-      top.className = 'cube-row';
-      const space = document.createElement('div');
-      space.style.width = '96px';
-      top.appendChild(space);
-      top.appendChild(createFace(cube.U));
-      display.appendChild(top);
-
-      // Middle faces (L, F, R, B)
-      const mid = document.createElement('div');
-      mid.className = 'cube-row';
-      mid.appendChild(createFace(cube.L));
-      mid.appendChild(createFace(cube.F));
-      mid.appendChild(createFace(cube.R));
-      mid.appendChild(createFace(cube.B));
-      display.appendChild(mid);
-
-      // Bottom face (D)
-      const bot = document.createElement('div');
-      bot.className = 'cube-row';
-      const space2 = document.createElement('div');
-      space2.style.width = '96px';
-      bot.appendChild(space2);
-      bot.appendChild(createFace(cube.D));
-      display.appendChild(bot);
-    }
-
-    function createFace(faceColors) {
-      const face = document.createElement('div');
-      face.className = 'cube-face';
-      for (let i = 0; i < 9; i++) {
-        const sticker = document.createElement('div');
-        sticker.className = faceColors[i];
-        face.appendChild(sticker);
-      }
-      return face;
+    function renderCube(scramble) {
+      const cubeDisplay = document.getElementById('cube-display');
+      const puzzle = currentCubeSize === '2x2' ? '2' : '3';
+      cubeDisplay.src = `https://visualcube.api.cubing.net/visualcube.php?fmt=svg&size=150&pzl=${puzzle}&alg=${scramble}`;
     }
 
     // Statistics functions
@@ -1333,295 +1109,50 @@ function resetToHome() {
 
     // Spacebar timer control
     document.addEventListener('keydown', function(e) {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' && document.getElementById('timer-box').style.display === 'block') {
         e.preventDefault();
         handleTimerAction();
       }
     });
 
+    // Cube size dropdown functionality
+    const cubeSizeToggle = document.getElementById('cubeSizeToggle');
+    const cubeSizeOptions = document.getElementById('cubeSizeOptions');
+
+    cubeSizeToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      cubeSizeOptions.style.display = cubeSizeOptions.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function() {
+      if (cubeSizeOptions.style.display === 'block') {
+        cubeSizeOptions.style.display = 'none';
+      }
+    });
+
+    // Prevent dropdown from closing when clicking inside it
+    cubeSizeOptions.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+
+    function changeCubeSize(size) {
+      currentCubeSize = size;
+      cubeSizeToggle.textContent = `${size} Cube`;
+      cubeSizeOptions.style.display = 'none';
+      generateScramble();
+    }
+
     // Initialize
     window.onload = function() {
-      cube = getSolvedCube();
-      renderCube();
-      
       // Load any existing times
       if (times.length > 0) {
         sessionTimes = [...times].slice(0, 100); // Load up to 100 most recent times
         updateStats();
         renderTimesList();
       }
+      generateScramble(); // generate initial scramble and image
     };
-    // 2x2 Cube functionality
-    let currentCubeSize = '3x3'; // Default to 3x3
-    
-    function toggleCubeSize() {
-      currentCubeSize = currentCubeSize === '3x3' ? '2x2' : '3x3';
-      document.getElementById('cube-size-toggle').textContent = `Switch to ${currentCubeSize === '3x3' ? '2x2' : '3x3'}`;
-      generateScramble();
-    }
-    
-    function getSolved2x2Cube() {
-      return {
-        U: Array(4).fill('U'),
-        D: Array(4).fill('D'),
-        F: Array(4).fill('F'),
-        B: Array(4).fill('B'),
-        L: Array(4).fill('L'),
-        R: Array(4).fill('R')
-      };
-    }
-    
-    function generate2x2Scramble() {
-      cube = getSolved2x2Cube();
-      const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
-      const suffixes = ['', "'", '2'];
-      let scramble = '', last = '';
-    
-      for (let i = 0; i < 10; i++) { // Fewer moves for 2x2
-        let move;
-        do {
-          move = moves[Math.floor(Math.random() * moves.length)];
-        } while (move === last);
-        last = move;
-        const suf = suffixes[Math.floor(Math.random() * 3)];
-        const finalMove = move + suf;
-        scramble += finalMove + ' ';
-        apply2x2Move(finalMove);
-      }
-    
-      document.getElementById('scramble').innerText = 'Scramble: ' + scramble.trim();
-      render2x2Cube();
-    }
-    
-    function rotate2x2Face(face, clockwise) {
-      const current = [...cube[face]];
-      const rotated = clockwise ? 
-        [current[2], current[0],
-         current[3], current[1]] :
-        [current[1], current[3],
-         current[0], current[2]];
-      cube[face] = rotated;
-    }
-    
-    function apply2x2Move(move) {
-      const face = move[0];
-      const isDouble = move.includes('2');
-      const isCCW = move.includes("'");
-      
-      for (let i = 0; i < (isDouble ? 2 : 1); i++) {
-        rotate2x2Face(face, !isCCW);
-        rotate2x2Adjacent(face, !isCCW);
-      }
-    }
-    
-    function rotate2x2Adjacent(face, clockwise) {
-      switch (face) {
-        case 'U':
-          if (clockwise) {
-            const temp = [cube.F[0], cube.F[1]];
-            cube.F[0] = cube.R[0]; cube.F[1] = cube.R[1];
-            cube.R[0] = cube.B[0]; cube.R[1] = cube.B[1];
-            cube.B[0] = cube.L[0]; cube.B[1] = cube.L[1];
-            cube.L[0] = temp[0]; cube.L[1] = temp[1];
-          } else {
-            const temp = [cube.F[0], cube.F[1]];
-            cube.F[0] = cube.L[0]; cube.F[1] = cube.L[1];
-            cube.L[0] = cube.B[0]; cube.L[1] = cube.B[1];
-            cube.B[0] = cube.R[0]; cube.B[1] = cube.R[1];
-            cube.R[0] = temp[0]; cube.R[1] = temp[1];
-          }
-          break;
-          
-        case 'D':
-          if (clockwise) {
-            const temp = [cube.F[2], cube.F[3]];
-            cube.F[2] = cube.L[2]; cube.F[3] = cube.L[3];
-            cube.L[2] = cube.B[2]; cube.L[3] = cube.B[3];
-            cube.B[2] = cube.R[2]; cube.B[3] = cube.R[3];
-            cube.R[2] = temp[0]; cube.R[3] = temp[1];
-          } else {
-            const temp = [cube.F[2], cube.F[3]];
-            cube.F[2] = cube.R[2]; cube.F[3] = cube.R[3];
-            cube.R[2] = cube.B[2]; cube.R[3] = cube.B[3];
-            cube.B[2] = cube.L[2]; cube.B[3] = cube.L[3];
-            cube.L[2] = temp[0]; cube.L[3] = temp[1];
-          }
-          break;
-          
-        case 'F':
-          if (clockwise) {
-            const tempU = [cube.U[2], cube.U[3]];
-            cube.U[2] = cube.L[3]; cube.U[3] = cube.L[1];
-            cube.L[1] = cube.D[0]; cube.L[3] = cube.D[1];
-            cube.D[0] = cube.R[2]; cube.D[1] = cube.R[0];
-            cube.R[0] = tempU[1]; cube.R[2] = tempU[0];
-          } else {
-            const tempU = [cube.U[2], cube.U[3]];
-            cube.U[2] = cube.R[0]; cube.U[3] = cube.R[2];
-            cube.R[0] = cube.D[1]; cube.R[2] = cube.D[0];
-            cube.D[0] = cube.L[1]; cube.D[1] = cube.L[3];
-            cube.L[1] = tempU[1]; cube.L[3] = tempU[0];
-          }
-          break;
-          
-        case 'B':
-          if (clockwise) {
-            const tempU = [cube.U[0], cube.U[1]];
-            cube.U[0] = cube.R[1]; cube.U[1] = cube.R[3];
-            cube.R[1] = cube.D[3]; cube.R[3] = cube.D[2];
-            cube.D[2] = cube.L[0]; cube.D[3] = cube.L[2];
-            cube.L[0] = tempU[1]; cube.L[2] = tempU[0];
-          } else {
-            const tempU = [cube.U[0], cube.U[1]];
-            cube.U[0] = cube.L[2]; cube.U[1] = cube.L[0];
-            cube.L[0] = cube.D[2]; cube.L[2] = cube.D[3];
-            cube.D[2] = cube.R[3]; cube.D[3] = cube.R[1];
-            cube.R[1] = tempU[0]; cube.R[3] = tempU[1];
-          }
-          break;
-          
-        case 'L':
-          if (clockwise) {
-            const tempU = [cube.U[0], cube.U[2]];
-            cube.U[0] = cube.B[3]; cube.U[2] = cube.B[1];
-            cube.B[1] = cube.D[2]; cube.B[3] = cube.D[0];
-            cube.D[0] = cube.F[0]; cube.D[2] = cube.F[2];
-            cube.F[0] = tempU[0]; cube.F[2] = tempU[1];
-          } else {
-            const tempU = [cube.U[0], cube.U[2]];
-            cube.U[0] = cube.F[0]; cube.U[2] = cube.F[2];
-            cube.F[0] = cube.D[0]; cube.F[2] = cube.D[2];
-            cube.D[0] = cube.B[3]; cube.D[2] = cube.B[1];
-            cube.B[1] = tempU[1]; cube.B[3] = tempU[0];
-          }
-          break;
-          
-        case 'R':
-          if (clockwise) {
-            const tempU = [cube.U[1], cube.U[3]];
-            cube.U[1] = cube.F[1]; cube.U[3] = cube.F[3];
-            cube.F[1] = cube.D[1]; cube.F[3] = cube.D[3];
-            cube.D[1] = cube.B[0]; cube.D[3] = cube.B[2];
-            cube.B[0] = tempU[1]; cube.B[2] = tempU[0];
-          } else {
-            const tempU = [cube.U[1], cube.U[3]];
-            cube.U[1] = cube.B[2]; cube.U[3] = cube.B[0];
-            cube.B[0] = cube.D[3]; cube.B[2] = cube.D[1];
-            cube.D[1] = cube.F[1]; cube.D[3] = cube.F[3];
-            cube.F[1] = tempU[0]; cube.F[3] = tempU[1];
-          }
-          break;
-      }
-    }
-    
-    function render2x2Cube() {
-      const display = document.getElementById('cube-display');
-      display.innerHTML = '';
-    
-      // Top face (U)
-      const top = document.createElement('div');
-      top.className = 'cube-row';
-      const space = document.createElement('div');
-      space.style.width = '64px';
-      top.appendChild(space);
-      top.appendChild(create2x2Face(cube.U));
-      display.appendChild(top);
-    
-      // Middle faces (L, F, R, B)
-      const mid = document.createElement('div');
-      mid.className = 'cube-row';
-      mid.appendChild(create2x2Face(cube.L));
-      mid.appendChild(create2x2Face(cube.F));
-      mid.appendChild(create2x2Face(cube.R));
-      mid.appendChild(create2x2Face(cube.B));
-      display.appendChild(mid);
-    
-      // Bottom face (D)
-      const bot = document.createElement('div');
-      bot.className = 'cube-row';
-      const space2 = document.createElement('div');
-      space2.style.width = '64px';
-      bot.appendChild(space2);
-      bot.appendChild(create2x2Face(cube.D));
-      display.appendChild(bot);
-    }
-    
-    function create2x2Face(faceColors) {
-      const face = document.createElement('div');
-      face.className = 'cube-face';
-      face.style.gridTemplateColumns = 'repeat(2, 30px)';
-      face.style.gridTemplateRows = 'repeat(2, 30px)';
-      for (let i = 0; i < 4; i++) {
-        const sticker = document.createElement('div');
-        sticker.className = faceColors[i];
-        sticker.style.width = '30px';
-        sticker.style.height = '30px';
-        face.appendChild(sticker);
-      }
-      return face;
-    }
-    
-    // Modify the existing generateScramble function to handle both cube sizes
-    function generateScramble() {
-      if (currentCubeSize === '2x2') {
-        generate2x2Scramble();
-      } else {
-        // Original 3x3 scramble code
-        cube = getSolvedCube();
-        const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
-        const suffixes = ['', "'", '2'];
-        let scramble = '', last = '';
-    
-        for (let i = 0; i < 20; i++) {
-          let move;
-          do {
-            move = moves[Math.floor(Math.random() * moves.length)];
-          } while (move === last);
-          last = move;
-          const suf = suffixes[Math.floor(Math.random() * 3)];
-          const finalMove = move + suf;
-          scramble += finalMove + ' ';
-          applyMove(finalMove);
-        }
-    
-        document.getElementById('scramble').innerText = 'Scramble: ' + scramble.trim();
-        renderCube();
-      }
-      document.getElementById('timer').innerText = '0.00';
-      document.getElementById('timer').className = '';
-    }
-    
-    // Add a toggle button to the timer section HTML (add this just before the timer instructions div)
-
-// Cube size dropdown functionality
-const cubeSizeToggle = document.getElementById('cubeSizeToggle');
-const cubeSizeOptions = document.getElementById('cubeSizeOptions');
-
-cubeSizeToggle.addEventListener('click', function(e) {
-  e.stopPropagation();
-  cubeSizeOptions.style.display = cubeSizeOptions.style.display === 'block' ? 'none' : 'block';
-});
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function() {
-  if (cubeSizeOptions.style.display === 'block') {
-    cubeSizeOptions.style.display = 'none';
-  }
-});
-
-// Prevent dropdown from closing when clicking inside it
-cubeSizeOptions.addEventListener('click', function(e) {
-  e.stopPropagation();
-});
-
-function changeCubeSize(size) {
-  currentCubeSize = size;
-  cubeSizeToggle.textContent = `${size} Cube`;
-  cubeSizeOptions.style.display = 'none';
-  generateScramble();
-}
-
   </script>
 </body>
 </html>
-
